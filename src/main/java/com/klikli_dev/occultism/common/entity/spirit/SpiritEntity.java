@@ -212,8 +212,11 @@ public abstract class SpiritEntity extends TamableAnimal implements ISkinnedCrea
 
     public void setDepositEntityUUID(EntityReference<LivingEntity> ref) {
         this.entityData.set(DEPOSIT_ENTITY_UUID, Optional.ofNullable(ref));
-        if (ref != null)
+        if (ref != null) {
             this.entityData.set(DEPOSIT_POSITION, Optional.empty());
+            //keep the brain in sync with the entity data, same as setDepositPosition
+            BrainUtil.clearMemory(this, OccultismMemoryTypes.DEPOSIT_POSITION.get());
+        }
     }
 
     public Optional<BlockPos> getExtractPosition() {
