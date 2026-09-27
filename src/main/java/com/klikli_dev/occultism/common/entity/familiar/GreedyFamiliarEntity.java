@@ -97,6 +97,8 @@ public class GreedyFamiliarEntity extends FamiliarEntity implements IFilterConfi
         }
     };
 
+    private static final int CURIO_PICKUP_INTERVAL = 4;
+
     private float earRotZ, earRotZ0, earRotX, earRotX0, peekRot, peekRot0, monsterRot, monsterRot0;
     private int monsterAnimTimer;
 
@@ -188,7 +190,8 @@ public class GreedyFamiliarEntity extends FamiliarEntity implements IFilterConfi
 
     @Override
     public void curioTick(LivingEntity wearer) {
-        if (!(wearer instanceof Player))
+        //picking up only works on the server, and does not need to happen every tick
+        if (!(wearer instanceof Player) || wearer.level().isClientSide() || (wearer.tickCount + wearer.getId()) % CURIO_PICKUP_INTERVAL != 0)
             return;
 
         if (this.isAbilityEnabled(wearer))
