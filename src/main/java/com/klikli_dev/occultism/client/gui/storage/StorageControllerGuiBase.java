@@ -141,9 +141,29 @@ public abstract class StorageControllerGuiBase<T extends StorageControllerContai
     protected int rows;
     protected int columns;
     protected int realTopPos;
-    private int lastCachedStacksToDisplayCount;
+    /**
+     * Filtered and sorted stacks to display, cached until stacks, search text or sorting change.
+     */
     private List<ItemStack> cachedStacksToDisplay;
     private String cachedSearchString;
+    private SortDirection cachedSortDirection;
+    private SortType cachedSortType;
+    /**
+     * The list the item grid was last built from, to only rebuild the grid if the list or the scroll position changed.
+     */
+    private List<ItemStack> builtStacksToDisplay;
+    /**
+     * Filtered and sorted machines to display, cached until machines, search text or sorting change.
+     */
+    private List<MachineReference> cachedMachinesToDisplay;
+    private String cachedMachinesSearchString;
+    private SortDirection cachedMachinesSortDirection;
+    private SortType cachedMachinesSortType;
+    private List<MachineReference> builtMachinesToDisplay;
+    /**
+     * Tracks the order slot contents to only switch to autocrafting mode when an item is put into it.
+     */
+    private boolean orderSlotWasEmpty = true;
 
     public StorageControllerGuiBase(T container, Inventory playerInventory, Component name, StorageScreenBackend backend) {
         super(container, playerInventory, name, GUI_WIDTH, 256);
@@ -280,6 +300,7 @@ public abstract class StorageControllerGuiBase<T extends StorageControllerContai
     @Override
     public void setLinkedMachines(List<MachineReference> machines) {
         this.linkedMachines = machines;
+        this.cachedMachinesToDisplay = null;
     }
 
     @Override
@@ -414,6 +435,9 @@ public abstract class StorageControllerGuiBase<T extends StorageControllerContai
         if (nothandled)
             return super.keyPressed(event);
 
+        //backspace, delete, paste etc. change the search text without a charTyped event
+        this.state.setSearchText(this.searchBar.getValue());
+
         // OccultismEmiIntegration excluded from build - EMI sync disabled
         if (OccultismJeiIntegration.get().isLoaded() && JeiSettings.isJeiSearchSynced()) {
             OccultismJeiIntegration.get().setFilterText(this.searchBar.getValue());
@@ -428,8 +452,15 @@ public abstract class StorageControllerGuiBase<T extends StorageControllerContai
 
     // SimpleContainer.addListener was removed in 26.1; poll the order slot each frame instead
     public void containerChanged(Container inventory) {
-        if (inventory == this.storageControllerContainer.getOrderSlot() && !inventory.getItem(0).isEmpty()
-                && !this.state.isAutocraftingMode()) {
+        if (inventory != this.storageControllerContainer.getOrderSlot())
+            return;
+
+        //only switch when an item is put into the order slot, otherwise the player could never leave autocrafting mode while it is filled
+        boolean isEmpty = inventory.getItem(0).isEmpty();
+        boolean itemAdded = this.orderSlotWasEmpty && !isEmpty;
+        this.orderSlotWasEmpty = isEmpty;
+
+        if (itemAdded && !this.state.isAutocraftingMode()) {
             this.state.setMode(StorageControllerGuiMode.AUTOCRAFTING);
             this.init();
         }
@@ -606,19 +637,17 @@ public abstract class StorageControllerGuiBase<T extends StorageControllerContai
     }
 
     protected void drawItems(GuiGraphicsExtractor guiGraphics, float partialTicks, int mouseX, int mouseY) {
+        //filtered and sorted, cached until stacks, search or sorting change
         List<ItemStack> stacksToDisplay = this.applySearchToItems();
 
         this.state.setMaxFirstVisibleRow(this.displayQuery.maxFirstVisibleRow(stacksToDisplay.size(), this.columns, this.rows));
         boolean changedFirstVisibleRow = this.state.trackFirstVisibleRowChange();
 
-        var changedStacksToDisplay = this.lastCachedStacksToDisplayCount != stacksToDisplay.size();
-        this.lastCachedStacksToDisplayCount = stacksToDisplay.size();
-
-        var changedStacks = this.lastStacksCount != this.getClientStorageCache().stacks().size();
+        var changedStacksToDisplay = this.builtStacksToDisplay != stacksToDisplay;
+        this.builtStacksToDisplay = stacksToDisplay;
         this.lastStacksCount = this.getClientStorageCache().stacks().size();
 
-        if (changedFirstVisibleRow || changedStacksToDisplay || changedStacks) {
-            this.sortItemStacks(stacksToDisplay);
+        if (changedFirstVisibleRow || changedStacksToDisplay) {
             this.buildItemSlots(stacksToDisplay);
         }
 
@@ -626,10 +655,17 @@ public abstract class StorageControllerGuiBase<T extends StorageControllerContai
     }
 
     protected void drawMachines(GuiGraphicsExtractor guiGraphics, float partialTicks, int mouseX, int mouseY) {
+        //filtered and sorted, cached until machines, search or sorting change
         List<MachineReference> machinesToDisplay = this.applySearchToMachines();
         this.state.setMaxFirstVisibleRow(this.displayQuery.maxFirstVisibleRow(machinesToDisplay.size(), this.columns, this.rows));
-        this.sortMachines(machinesToDisplay);
-        this.buildMachineSlots(machinesToDisplay);
+        boolean changedFirstVisibleRow = this.state.trackFirstVisibleRowChange();
+
+        var changedMachinesToDisplay = this.builtMachinesToDisplay != machinesToDisplay;
+        this.builtMachinesToDisplay = machinesToDisplay;
+
+        if (changedFirstVisibleRow || changedMachinesToDisplay) {
+            this.buildMachineSlots(machinesToDisplay);
+        }
         this.drawMachineSlots(guiGraphics, mouseX, mouseY);
     }
 
@@ -732,29 +768,57 @@ public abstract class StorageControllerGuiBase<T extends StorageControllerContai
     protected void resetDisplayCaches() {
         this.lastStacksCount = 0;
         this.cachedStacksToDisplay = null;
+        this.builtStacksToDisplay = null;
+        this.cachedMachinesToDisplay = null;
+        this.builtMachinesToDisplay = null;
         this.state.resetDisplayTracking();
     }
 
+    /**
+     * @return the filtered and sorted stacks to display. The result is cached until stacks, search text or sorting change.
+     */
     protected List<ItemStack> applySearchToItems() {
         String searchText = this.state.searchText();
+        SortDirection sortDirection = this.getSortDirection();
+        SortType sortType = this.getSortType();
 
-        if (!searchText.equals("")) {
-            if (this.cachedStacksToDisplay != null && this.cachedSearchString != null && this.cachedSearchString.equals(searchText))
-                return this.cachedStacksToDisplay;
+        if (this.cachedStacksToDisplay != null && searchText.equals(this.cachedSearchString)
+                && sortDirection == this.cachedSortDirection && sortType == this.cachedSortType)
+            return this.cachedStacksToDisplay;
 
-            List<ItemStack> stacksToDisplay = this.displayQuery.filterItems(this.getClientStorageCache().stacks(), searchText,
-                    this::itemMatchesSearch);
+        //filterItems always returns a new list, so we can sort it in place
+        List<ItemStack> stacksToDisplay = this.displayQuery.filterItems(this.getClientStorageCache().stacks(), searchText,
+                this::itemMatchesSearch);
+        this.sortItemStacks(stacksToDisplay);
 
-            this.cachedStacksToDisplay = stacksToDisplay;
-            this.cachedSearchString = searchText;
-
-            return stacksToDisplay;
-        }
-        return new ArrayList<>(this.getClientStorageCache().stacks());
+        this.cachedStacksToDisplay = stacksToDisplay;
+        this.cachedSearchString = searchText;
+        this.cachedSortDirection = sortDirection;
+        this.cachedSortType = sortType;
+        return stacksToDisplay;
     }
 
+    /**
+     * @return the filtered and sorted machines to display. The result is cached until machines, search text or sorting change.
+     */
     protected List<MachineReference> applySearchToMachines() {
-        return this.displayQuery.filterMachines(this.linkedMachines, this.state.searchText(), this::machineMatchesSearch);
+        String searchText = this.state.searchText();
+        SortDirection sortDirection = this.getSortDirection();
+        SortType sortType = this.getSortType();
+
+        if (this.cachedMachinesToDisplay != null && searchText.equals(this.cachedMachinesSearchString)
+                && sortDirection == this.cachedMachinesSortDirection && sortType == this.cachedMachinesSortType)
+            return this.cachedMachinesToDisplay;
+
+        //filterMachines always returns a new list, so we can sort it in place
+        List<MachineReference> machinesToDisplay = this.displayQuery.filterMachines(this.linkedMachines, searchText, this::machineMatchesSearch);
+        this.sortMachines(machinesToDisplay);
+
+        this.cachedMachinesToDisplay = machinesToDisplay;
+        this.cachedMachinesSearchString = searchText;
+        this.cachedMachinesSortDirection = sortDirection;
+        this.cachedMachinesSortType = sortType;
+        return machinesToDisplay;
     }
 
     protected boolean itemMatchesSearch(ItemStack stack) {
@@ -790,7 +854,7 @@ public abstract class StorageControllerGuiBase<T extends StorageControllerContai
             String customName = StringUtils.isBlank(machine.customName) ? "" : machine.customName.toLowerCase();
             return machine.getInsertItemStack().getDisplayName().getString().toLowerCase()
                     .contains(searchText.toLowerCase()) ||
-                    customName.contains(searchText.toLowerCase().substring(1));
+                    customName.contains(searchText.toLowerCase());
         }
     }
 
