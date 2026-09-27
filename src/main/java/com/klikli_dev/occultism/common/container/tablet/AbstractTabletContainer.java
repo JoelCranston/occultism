@@ -56,7 +56,8 @@ public abstract class AbstractTabletContainer extends AbstractContainerMenu {
 
     @Override
     public void broadcastChanges() {
-        if (this.tabletInventory instanceof TabletInventory) {
+        //only write back while the tablet is still the stack in the source slot, never into a moved or copied stack
+        if (this.tabletInventory instanceof TabletInventory && this.stillValid(this.playerInventory.player)) {
             ((TabletInventory) this.tabletInventory).writeItemStack();
         }
         super.broadcastChanges();
