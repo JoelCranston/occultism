@@ -49,6 +49,8 @@ public class DeerFamiliarEntity extends FamiliarEntity {
     private static final byte START_EATING = 10;
 
     private int eatTimer, neckRotTimer, oNeckRotTimer;
+    private LivingEntity cachedTarget;
+    private int cachedTargetTick = -1;
 
     public DeerFamiliarEntity(EntityType<? extends DeerFamiliarEntity> type, Level level) {
         super(type, level);
@@ -146,6 +148,15 @@ public class DeerFamiliarEntity extends FamiliarEntity {
 
     @Override
     public @Nullable LivingEntity getTarget() {
+        //the target is queried multiple times per tick and computing it is not free, so only compute it once per tick
+        if (this.cachedTargetTick != this.tickCount) {
+            this.cachedTargetTick = this.tickCount;
+            this.cachedTarget = this.findTarget();
+        }
+        return this.cachedTarget;
+    }
+
+    private @Nullable LivingEntity findTarget() {
         List<LivingEntity> list = FamiliarUtil.getOwnerEnemies(this.getFamiliarOwner(), this, 49);
         LivingEntity ent = this.getLastHurtByMob();
         if (ent != null && ent.isAlive())
