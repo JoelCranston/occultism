@@ -43,6 +43,12 @@ import java.util.Map;
 import java.util.UUID;
 
 public abstract class RitualSatchelItem extends Item {
+    /**
+     * The maximum distance between a pentacle anchor and the clicked target block. Pentacles are much smaller than this,
+     * it prevents clients from making the server simulate (and chunk-load) multiblocks at arbitrary positions.
+     */
+    public static final int MAX_PENTACLE_ANCHOR_DISTANCE = 32;
+
     private final Map<UUID, PentacleData> targetPentacles = Object2ObjectMaps.synchronize(new Object2ObjectArrayMap<>());
 
     public RitualSatchelItem(Properties properties) {
@@ -51,6 +57,19 @@ public abstract class RitualSatchelItem extends Item {
 
     public Map<UUID, PentacleData> targetPentacles() {
         return this.targetPentacles;
+    }
+
+    /**
+     * Validates client supplied pentacle positions: the anchor has to be near the target and both have to be loaded.
+     */
+    public static boolean isValidPentacleTarget(Level level, BlockPos anchor, BlockPos target) {
+        if (anchor == null || target == null)
+            return false;
+
+        if (anchor.distSqr(target) > MAX_PENTACLE_ANCHOR_DISTANCE * MAX_PENTACLE_ANCHOR_DISTANCE)
+            return false;
+
+        return level.hasChunkAt(anchor) && level.hasChunkAt(target);
     }
 
     public void setTargetPentacle(UUID player, Identifier multiblock, BlockPos anchor, Rotation facing, BlockPos target, long timeWhenAdded) {

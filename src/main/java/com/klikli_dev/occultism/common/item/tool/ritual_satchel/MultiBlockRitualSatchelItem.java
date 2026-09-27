@@ -147,7 +147,13 @@ public class MultiBlockRitualSatchelItem extends RitualSatchelItem {
             return InteractionResult.FAIL;
         }
 
+        if (!isValidPentacleTarget(context.getLevel(), targetPentacle.anchor(), context.getClickedPos()))
+            return InteractionResult.FAIL;
+
         var multiblock = ModonomiconAPI.get().getMultiblock(targetPentacle.multiblock());
+        if (multiblock == null)
+            return InteractionResult.FAIL;
+
         var simulation = multiblock.simulate(context.getLevel(), targetPentacle.anchor(), targetPentacle.facing(), false, false);
 
         boolean placedAnything = false;
