@@ -16,12 +16,15 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SpawnEggItem;
 import org.jspecify.annotations.NonNull;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class FamiliarScrollWidget extends AbstractScrollArea {
 
     private final List<EntityType<?>> entities;
+    private final Map<EntityType<?>, ItemStack> iconCache = new HashMap<>();
     private EntityType<?> selectedEntity;
 
     public FamiliarScrollWidget(int x, int y, int width, int height, List<EntityType<? extends IFamiliar>> entities, EntityType<?> selectedEntity) {
@@ -83,7 +86,7 @@ public class FamiliarScrollWidget extends AbstractScrollArea {
                 graphics.fill(getX(), entryY, getX() + entryWidth, entryY + entryHeight, 0x40FFFFFF);
             }
 
-            ItemStack icon = getEntityIcon(entityType);
+            ItemStack icon = this.iconCache.computeIfAbsent(entityType, FamiliarScrollWidget::getEntityIcon);
             graphics.item(
                     icon,
                     getX() + padding,
