@@ -147,10 +147,13 @@ public class HeadlessFamiliarEntity extends FamiliarEntity {
                 this.setHead(NO_HEAD);
 
             if (this.hasBlacksmithUpgrade() && !this.isHeadlessDead() && this.tickCount % 10 == 0
-                    && this.getHeadType() != null)
+                    && this.getHeadType() != null) {
+                //resolve the owner once instead of for every entity
+                LivingEntity owner = this.getFamiliarOwner();
                 for (LivingEntity e : this.level().getEntities(this.getHeadType(), this.getBoundingBox().inflate(5),
-                        e -> e != this.getFamiliarOwner()))
+                        target -> target != owner && this.canWeaken(target, owner)))
                     e.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 20 * 3));
+            }
         } else {
             if (this.hasBlacksmithUpgrade() && !this.isHeadlessDead() && this.tickCount % 10 == 0) {
                 Vec3 forward = Vec3.directionFromRotation(0, this.getYRot());
@@ -168,6 +171,16 @@ public class HeadlessFamiliarEntity extends FamiliarEntity {
                             this.getY() + 1 + this.randPos(0.3), this.getZ() + this.randPos(0.3), 0, 0, 0);
                 }
         }
+    }
+
+    private boolean canWeaken(LivingEntity target, @Nullable LivingEntity owner) {
+        //respect pvp settings for player heads
+        if (target instanceof Player player && !(owner instanceof Player ownerPlayer && ownerPlayer.canHarmPlayer(player)))
+            return false;
+
+        //only refresh the effect when it is missing or about to run out, to avoid sending effect updates all the time
+        MobEffectInstance weakness = target.getEffect(MobEffects.WEAKNESS);
+        return weakness == null || weakness.getDuration() < 20;
     }
 
     @Nullable
