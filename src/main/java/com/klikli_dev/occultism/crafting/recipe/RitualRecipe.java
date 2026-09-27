@@ -22,6 +22,7 @@
 
 package com.klikli_dev.occultism.crafting.recipe;
 
+import com.google.common.base.Suppliers;
 import com.klikli_dev.modonomicon.api.ModonomiconAPI;
 import com.klikli_dev.modonomicon.api.multiblock.Multiblock;
 import com.klikli_dev.occultism.common.ritual.Ritual;
@@ -125,7 +126,8 @@ public class RitualRecipe implements Recipe<SingleRecipeInput> {
                 entityToSummonSettings : new EntityToSummonSettings(null, null, null, null, -1, 1);
         this.ritualDummy = ritualDummy;
         this.result = result;
-        this.ritual = () -> OccultismRituals.REGISTRY.get(this.ritualType).orElseThrow().value().create(this);
+        //rituals are stateless, so we create them once per recipe instead of on every access
+        this.ritual = Suppliers.memoize(() -> OccultismRituals.REGISTRY.get(this.ritualType).orElseThrow().value().create(this));
         this.command = command;
     }
 
