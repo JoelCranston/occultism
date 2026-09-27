@@ -289,19 +289,25 @@ public class GreedyFamiliarEntity extends FamiliarEntity implements IFilterConfi
             return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         }
 
-        if (this.hasBlacksmithUpgrade() && !this.getOffhandItem().isEmpty()) {
-            ItemTransferUtil.giveItemToPlayer(playerIn, this.getOffhandItem());
-            try (var tx = Transaction.openRoot()) {
-                this.inventory.extract(0, this.inventory.getResource(0), 1, tx);
-                tx.commit();
+        //only the owner may give or take the block, and only on the server to avoid client side ghost items
+        if (this.hasBlacksmithUpgrade() && this.getFamiliarOwner() == playerIn && !this.getOffhandItem().isEmpty()) {
+            if (!this.level().isClientSide()) {
+                ItemTransferUtil.giveItemToPlayer(playerIn, this.getOffhandItem().copy());
+                try (var tx = Transaction.openRoot()) {
+                    this.inventory.extract(0, this.inventory.getResource(0), 1, tx);
+                    tx.commit();
+                }
             }
             return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
-        } else if (this.hasBlacksmithUpgrade() && stack.getItem() instanceof BlockItem) {
-            try (var tx = Transaction.openRoot()) {
-                this.inventory.set(0, ItemResource.of(new ItemStack(stack.getItem())), 1);
-                tx.commit();
+        } else if (this.hasBlacksmithUpgrade() && this.getFamiliarOwner() == playerIn && stack.getItem() instanceof BlockItem) {
+            if (!this.level().isClientSide()) {
+                //keep the components of the block item
+                try (var tx = Transaction.openRoot()) {
+                    this.inventory.set(0, ItemResource.of(stack.copyWithCount(1)), 1);
+                    tx.commit();
+                }
+                stack.shrink(1);
             }
-            stack.shrink(1);
             return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         }
 
