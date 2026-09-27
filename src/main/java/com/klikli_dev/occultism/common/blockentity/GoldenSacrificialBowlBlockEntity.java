@@ -96,6 +96,7 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
 
     public Consumer<RightClickItem> rightClickItemListener;
     public Consumer<LivingDeathEvent> livingDeathEventListener;
+    protected boolean listenersRegistered;
 
 
     public GoldenSacrificialBowlBlockEntity(BlockPos worldPos, BlockState state) {
@@ -342,16 +343,45 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
                 var recipeKey = ResourceKey.create(Registries.RECIPE, this.currentRitualRecipeId);
                 var recipe = OccultismRecipeManager.get().getRecipeByKey(OccultismRecipes.RITUAL_TYPE.get(), recipeKey, this.level);
                 recipe.map(r -> r).ifPresent(r -> this.currentRitualRecipe = r);
-
-                if (this.level instanceof ServerLevel) {
-                    NeoForge.EVENT_BUS.addListener(this.rightClickItemListener);
-                    NeoForge.EVENT_BUS.addListener(this.livingDeathEventListener);
-                }
-
                 this.currentRitualRecipeId = null;
             }
         }
         return this.currentRitualRecipe;
+    }
+
+    /**
+     * Registers the sacrifice and item use listeners, if not already registered.
+     * Only has an effect on the server side.
+     */
+    protected void registerListeners() {
+        if (!this.listenersRegistered && this.level instanceof ServerLevel) {
+            NeoForge.EVENT_BUS.addListener(this.rightClickItemListener);
+            NeoForge.EVENT_BUS.addListener(this.livingDeathEventListener);
+            this.listenersRegistered = true;
+        }
+    }
+
+    /**
+     * Unregisters the sacrifice and item use listeners, if they are registered.
+     */
+    protected void unregisterListeners() {
+        if (this.listenersRegistered) {
+            NeoForge.EVENT_BUS.unregister(this.rightClickItemListener);
+            NeoForge.EVENT_BUS.unregister(this.livingDeathEventListener);
+            this.listenersRegistered = false;
+        }
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        this.unregisterListeners();
+        super.onChunkUnloaded();
+    }
+
+    @Override
+    public void setRemoved() {
+        this.unregisterListeners();
+        super.setRemoved();
     }
 
     public int getSignal() {
@@ -389,6 +419,8 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
     public void tick() {
         RecipeHolder<RitualRecipe> recipe = this.getCurrentRitualRecipe();
         if (!this.level.isClientSide() && recipe != null) {
+            //(re-)register listeners, e.g. after the ritual was loaded from disk
+            this.registerListeners();
             this.restoreCastingPlayer();
 
             if (this.remainingAdditionalIngredients == null) {
@@ -657,8 +689,7 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
                 return false;
             }
 
-            NeoForge.EVENT_BUS.addListener(this.rightClickItemListener);
-            NeoForge.EVENT_BUS.addListener(this.livingDeathEventListener);
+            this.registerListeners();
 
             this.setChanged();
             this.markNetworkDirty();
@@ -693,8 +724,7 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
         this.stopRitual(false);
         // Defensive: ensure listeners are always unregistered when the block entity is removed,
         // even if stopRitual() could not run (e.g. level is null during unload).
-        NeoForge.EVENT_BUS.unregister(this.rightClickItemListener);
-        NeoForge.EVENT_BUS.unregister(this.livingDeathEventListener);
+        this.unregisterListeners();
         super.preRemoveSideEffects(pos, state);
     }
 
@@ -744,8 +774,7 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
                 this.remainingAdditionalIngredients.clear();
             this.consumedIngredients.clear();
 
-            NeoForge.EVENT_BUS.unregister(this.rightClickItemListener);
-            NeoForge.EVENT_BUS.unregister(this.livingDeathEventListener);
+            this.unregisterListeners();
             this.ritualActive = false;
             this.setChanged();
             this.markNetworkDirty();
@@ -784,7 +813,7 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
 
     public void onPlayerRightClickItem(RightClickItem event) {
         Player player = event.getEntity();
-        if (!player.level().isClientSide() && this.getCurrentRitualRecipe() != null) {
+        if (!player.level().isClientSide() && player.level() == this.level && this.getCurrentRitualRecipe() != null) {
 
             if (this.getBlockPos().distSqr(event.getPos()) <= Ritual.ITEM_USE_DETECTION_RANGE_SQUARE) {
                 if (this.getCurrentRitualRecipe().value().getRitual().isValidItemUse(event)) {
@@ -796,7 +825,7 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
 
     public void onLivingDeath(LivingDeathEvent event) {
         LivingEntity entityLivingBase = event.getEntity();
-        if (!entityLivingBase.level().isClientSide() && this.getCurrentRitualRecipe() != null) {
+        if (!entityLivingBase.level().isClientSide() && entityLivingBase.level() == this.level && this.getCurrentRitualRecipe() != null) {
             //Limit to player kills
             if (event.getSource().getEntity() instanceof Player) {
                 if (this.getBlockPos().distSqr(entityLivingBase.blockPosition()) <= Ritual.SACRIFICE_DETECTION_RANGE_SQUARE) {
