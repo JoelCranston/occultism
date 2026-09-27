@@ -83,6 +83,9 @@ public class FamiliarUtil {
     }
 
     public static boolean isFamiliarEnabled(LivingEntity owner, EntityType<? extends IFamiliar> familiar) {
+        //missing settings mean the defaults (all familiars enabled), do not attach settings to entities that never had them
+        if (!owner.hasData(OccultismDataStorage.FAMILIAR_SETTINGS))
+            return true;
         return owner.getData(OccultismDataStorage.FAMILIAR_SETTINGS).isFamiliarEnabled(familiar);
     }
 
