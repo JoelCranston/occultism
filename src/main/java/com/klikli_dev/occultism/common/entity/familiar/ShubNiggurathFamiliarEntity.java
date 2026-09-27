@@ -24,6 +24,7 @@ package com.klikli_dev.occultism.common.entity.familiar;
 
 import com.klikli_dev.occultism.common.entity.familiar.GreedyFamiliarEntity.RideFamiliarGoal;
 import com.klikli_dev.occultism.registry.OccultismEntities;
+import com.klikli_dev.occultism.util.FamiliarUtil;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
@@ -45,6 +46,8 @@ public class ShubNiggurathFamiliarEntity extends FamiliarEntity {
     private static final int MAX_SPAWN_TIMER = 20 * 10;
     private static final int SPAWN_TIMER = 20 * 5;
     private static final int MIN_SPAWN_TIMER = 20;
+    private static final int MAX_SPAWNS = 6;
+    private static final float SPAWN_RANGE = 30;
 
     private int spawnTimer;
 
@@ -85,19 +88,19 @@ public class ShubNiggurathFamiliarEntity extends FamiliarEntity {
             if (!this.isSitting() && this.spawnTimer-- < 0) {
                 this.spawnTimer = this.hasIesniumUpgrade() ? MIN_SPAWN_TIMER :
                         this.hasBlacksmithUpgrade() ? SPAWN_TIMER : MAX_SPAWN_TIMER;
-                this.createSpawn(this, new Vector3d(this.getRandomX(2), this.getRandomY(), this.getRandomZ(2)));
+                if (this.canCreateSpawn(this, this.getFamiliarOwner()))
+                    this.createSpawn(this, new Vector3d(this.getRandomX(2), this.getRandomY(), this.getRandomZ(2)));
             }
         }
     }
 
     @Override
     public void curioTick(LivingEntity wearer) {
-        if (this.isAbilityEnabled(wearer)) {
-            int time = this.hasIesniumUpgrade() ? MIN_SPAWN_TIMER :
-                    this.hasBlacksmithUpgrade() ? SPAWN_TIMER : MAX_SPAWN_TIMER;
-            if (wearer.level() instanceof ServerLevel serverLevel && serverLevel.getGameTime() % time == 0) {
-                this.createSpawn(wearer, new Vector3d(wearer.getRandomX(2), wearer.getRandomY(), wearer.getRandomZ(2)));
-            }
+        int time = this.hasIesniumUpgrade() ? MIN_SPAWN_TIMER :
+                this.hasBlacksmithUpgrade() ? SPAWN_TIMER : MAX_SPAWN_TIMER;
+        if (wearer.level() instanceof ServerLevel serverLevel && serverLevel.getGameTime() % time == 0
+                && this.isAbilityEnabled(wearer) && this.canCreateSpawn(wearer, wearer)) {
+            this.createSpawn(wearer, new Vector3d(wearer.getRandomX(2), wearer.getRandomY(), wearer.getRandomZ(2)));
         }
     }
 
@@ -113,6 +116,16 @@ public class ShubNiggurathFamiliarEntity extends FamiliarEntity {
         if (this.getVehicle() instanceof CthulhuFamiliarEntity)
             return (CthulhuFamiliarEntity) this.getVehicle();
         return null;
+    }
+
+    private boolean canCreateSpawn(LivingEntity creator, LivingEntity owner) {
+        //only spawn if there is something to attack
+        if (FamiliarUtil.getOwnerEnemies(owner, creator, SPAWN_RANGE).isEmpty())
+            return false;
+
+        //do not flood the area with spawns
+        return creator.level().getEntitiesOfClass(ShubNiggurathSpawnEntity.class, creator.getBoundingBox().inflate(SPAWN_RANGE),
+                spawn -> spawn.isCreatedBy(creator)).size() < MAX_SPAWNS;
     }
 
     private void createSpawn(LivingEntity creator, Vector3d pos) {

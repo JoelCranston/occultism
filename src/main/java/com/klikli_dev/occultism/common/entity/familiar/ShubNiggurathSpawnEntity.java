@@ -109,6 +109,10 @@ public class ShubNiggurathSpawnEntity extends PathfinderMob {
         this.creatorId = input.read("creatorId", UUIDUtil.CODEC).orElse(null);
     }
 
+    public boolean isCreatedBy(Entity creator) {
+        return creator.getUUID().equals(this.creatorId);
+    }
+
     public boolean isBlinking(int eye) {
         return this.eyeBlinkTimers[eye] < 3;
     }
