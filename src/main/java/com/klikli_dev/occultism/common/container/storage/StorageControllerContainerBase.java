@@ -318,8 +318,11 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
             return;
         }
 
-        //lock recipes to avoid modification while we shift craft
-        this.recipeLocked = true;
+        //Get the crafting result and abort if none
+        ItemStack result = this.currentRecipe.value().assemble(CraftingInput.of(this.matrix.getWidth(), this.matrix.getHeight(), this.matrix.getItems()));
+        if (result.isEmpty()) {
+            return;
+        }
 
         //copy the recipe stacks
         List<ItemStack> recipeCopy = new ArrayList<>(this.matrix.getContainerSize());
@@ -327,145 +330,144 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
             recipeCopy.add(this.matrix.getItem(i).copy());
         }
 
-        //Get the crafting result and abort if none
-        ItemStack result = this.currentRecipe.value().assemble(CraftingInput.of(this.matrix.getWidth(), this.matrix.getHeight(), this.matrix.getItems()));
-        if (result.isEmpty()) {
-            return;
-        }
+        //lock recipes to avoid modification while we shift craft
+        this.recipeLocked = true;
+        try {
 
-        //get the stack size of the result
-        int resultStackSize = result.getCount();
-        List<ItemStack> resultList = new ArrayList<>();
-        int crafted = 0;
-        while (crafted + resultStackSize <= result.getMaxStackSize()) {
-            //AFAIK this should not happen unless an outside mod intervenes with the inventory during crafting
-            //but, in modpacks it definitely does happen, see https://github.com/klikli-dev/occultism/issues/212
-            //so we exit early here.
-            if (this.currentRecipe == null)
-                break;
+            //get the stack size of the result
+            int resultStackSize = result.getCount();
+            List<ItemStack> resultList = new ArrayList<>();
+            int crafted = 0;
+            while (crafted + resultStackSize <= result.getMaxStackSize()) {
+                //AFAIK this should not happen unless an outside mod intervenes with the inventory during crafting
+                //but, in modpacks it definitely does happen, see https://github.com/klikli-dev/occultism/issues/212
+                //so we exit early here.
+                if (this.currentRecipe == null)
+                    break;
 
-            ItemStack newResult = this.currentRecipe.value().assemble(CraftingInput.of(this.matrix.getWidth(), this.matrix.getHeight(), this.matrix.getItems())).copy();
-            if (newResult.getItem() != result.getItem())
-                break;
+                ItemStack newResult = this.currentRecipe.value().assemble(CraftingInput.of(this.matrix.getWidth(), this.matrix.getHeight(), this.matrix.getItems())).copy();
+                if (newResult.getItem() != result.getItem())
+                    break;
 
 
-            //exit if we can no longer insert
-            if (!ItemTransferUtil.insertItemStacked(PlayerInventoryWrapper.of(this.playerInventory).getMainSlots(), newResult, true)
-                    .isEmpty()) {
-                break;
-            }
+                //exit if we can no longer insert
+                if (!ItemTransferUtil.insertItemStacked(PlayerInventoryWrapper.of(this.playerInventory).getMainSlots(), newResult, true)
+                        .isEmpty()) {
+                    break;
+                }
 
-            //if recipe is no longer fulfilled, stop
-            if (!this.currentRecipe.value().matches(CraftingInput.of(this.matrix.getWidth(), this.matrix.getHeight(), this.matrix.getItems()), player.level())) {
-                break;
-            }
+                //if recipe is no longer fulfilled, stop
+                if (!this.currentRecipe.value().matches(CraftingInput.of(this.matrix.getWidth(), this.matrix.getHeight(), this.matrix.getItems()), player.level())) {
+                    break;
+                }
 
-            //region onTake replacement for crafting
+                //region onTake replacement for crafting
 
-            //give to the player
-            //historically we used ItemTransferUtil.giveItemToPlayer(player, result); here
-            //now we instead pre-merge the stack -> might prevent intervention by other mods.
-            resultList.add(newResult);
+                //give to the player
+                //historically we used ItemTransferUtil.giveItemToPlayer(player, result); here
+                //now we instead pre-merge the stack -> might prevent intervention by other mods.
+                resultList.add(newResult);
 
-            var craftingInput = CraftingInput.of(this.matrix.getWidth(), this.matrix.getHeight(), this.matrix.getItems());
-            var positionedCraftingInput = CraftingInput.ofPositioned(this.matrix.getWidth(), this.matrix.getHeight(), this.matrix.getItems());
-            //get remaining items in the crafting matrix
-            NonNullList<ItemStack> remainingCraftingItems = this.currentRecipe.value().getRemainingItems(craftingInput);
+                var craftingInput = CraftingInput.of(this.matrix.getWidth(), this.matrix.getHeight(), this.matrix.getItems());
+                var positionedCraftingInput = CraftingInput.ofPositioned(this.matrix.getWidth(), this.matrix.getHeight(), this.matrix.getItems());
+                //get remaining items in the crafting matrix
+                NonNullList<ItemStack> remainingCraftingItems = this.currentRecipe.value().getRemainingItems(craftingInput);
 
-            var left = positionedCraftingInput.left();
-            var top = positionedCraftingInput.top();
+                var left = positionedCraftingInput.left();
+                var top = positionedCraftingInput.top();
 
-            for (int k = 0; k < craftingInput.height(); k++) {
-                for (int l = 0; l < craftingInput.width(); l++) {
-                    int currentSlot = l + left + (k + top) * this.matrix.getWidth();
+                for (int k = 0; k < craftingInput.height(); k++) {
+                    for (int l = 0; l < craftingInput.width(); l++) {
+                        int currentSlot = l + left + (k + top) * this.matrix.getWidth();
 
-                    ItemStack currentCraftingItem = remainingCraftingItems.get(l + k * craftingInput.width());
-                    ItemStack stackInSlot = this.matrix.getItem(currentSlot);
+                        ItemStack currentCraftingItem = remainingCraftingItems.get(l + k * craftingInput.width());
+                        ItemStack stackInSlot = this.matrix.getItem(currentSlot);
 
 
-                    //if we find an empty stack, shrink it to remove it.
-                    if (currentCraftingItem.isEmpty()) {
-                        this.matrix.getItem(currentSlot).shrink(1);
-                        continue;
-                    }
-
-                    //handle container item refunding
-                    if (!(this.currentRecipe.value() instanceof PasteRepairItemRecipe)) {
-                        var remainder = stackInSlot.getItem().getCraftingRemainder();
-                        if (remainder != null) {
-                            ItemStack container = remainder.create();
-                            if (!stackInSlot.isStackable()) {
-                                stackInSlot = container;
-                                this.matrix.setItem(currentSlot, stackInSlot);
-                            } else {
-                                //handle stackable container items
-                                stackInSlot.shrink(1);
-                                ItemTransferUtil.giveItemToPlayer(player, container);
-                            }
+                        //if we find an empty stack, shrink it to remove it.
+                        if (currentCraftingItem.isEmpty()) {
+                            this.matrix.getItem(currentSlot).shrink(1);
                             continue;
                         }
-                    }
 
-                    if (!currentCraftingItem.isEmpty()) {
-                        //if the slot is empty now we just place the crafting item in it
-                        if (stackInSlot.isEmpty()) {
-                            this.matrix.setItem(currentSlot, currentCraftingItem);
+                        //handle container item refunding
+                        if (!(this.currentRecipe.value() instanceof PasteRepairItemRecipe)) {
+                            var remainder = stackInSlot.getItem().getCraftingRemainder();
+                            if (remainder != null) {
+                                ItemStack container = remainder.create();
+                                if (!stackInSlot.isStackable()) {
+                                    stackInSlot = container;
+                                    this.matrix.setItem(currentSlot, stackInSlot);
+                                } else {
+                                    //handle stackable container items
+                                    stackInSlot.shrink(1);
+                                    ItemTransferUtil.giveItemToPlayer(player, container);
+                                }
+                                continue;
+                            }
                         }
-                        //handle "normal items" ie non-damagable
-                        else if (!stackInSlot.isDamageableItem() && ItemStack.isSameItemSameComponents(stackInSlot, currentCraftingItem)) {
-                            //Used to call grow here, but that causes dupes of unbreakable items
-                            //removing it seems not to cause any harm?
-                            //  currentCraftingItem.grow(stackInSlot.getCount());
-                            this.matrix.setItem(currentSlot, currentCraftingItem);
-                        }
-                        //handle items that consume durability on craft
-                        else if (ItemStack.isSameItem(stackInSlot, currentCraftingItem)) {
-                            this.matrix.setItem(currentSlot, currentCraftingItem);
-                        } else {
-                            //last resort, like vanilla ResultSlot#onTake: consume the ingredient and
-                            //place the remainder in the player inventory or if that fails, drop it.
+
+                        if (!currentCraftingItem.isEmpty()) {
+                            //if the slot is empty now we just place the crafting item in it
+                            if (stackInSlot.isEmpty()) {
+                                this.matrix.setItem(currentSlot, currentCraftingItem);
+                            }
+                            //handle "normal items" ie non-damagable
+                            else if (!stackInSlot.isDamageableItem() && ItemStack.isSameItemSameComponents(stackInSlot, currentCraftingItem)) {
+                                //Used to call grow here, but that causes dupes of unbreakable items
+                                //removing it seems not to cause any harm?
+                                //  currentCraftingItem.grow(stackInSlot.getCount());
+                                this.matrix.setItem(currentSlot, currentCraftingItem);
+                            }
+                            //handle items that consume durability on craft
+                            else if (ItemStack.isSameItem(stackInSlot, currentCraftingItem)) {
+                                this.matrix.setItem(currentSlot, currentCraftingItem);
+                            } else {
+                                //last resort, like vanilla ResultSlot#onTake: consume the ingredient and
+                                //place the remainder in the player inventory or if that fails, drop it.
+                                this.matrix.removeItem(currentSlot, 1);
+                                ItemTransferUtil.giveItemToPlayer(player, currentCraftingItem);
+                            }
+
+                        } else if (!stackInSlot.isEmpty()) {
+                            //decrease the stack size in the matrix
                             this.matrix.removeItem(currentSlot, 1);
-                            ItemTransferUtil.giveItemToPlayer(player, currentCraftingItem);
+                            stackInSlot = this.matrix.getItem(currentSlot);
                         }
-
-                    } else if (!stackInSlot.isEmpty()) {
-                        //decrease the stack size in the matrix
-                        this.matrix.removeItem(currentSlot, 1);
-                        stackInSlot = this.matrix.getItem(currentSlot);
                     }
                 }
-            }
-            //endregion onTake replacement for crafting
+                //endregion onTake replacement for crafting
 
-            crafted += resultStackSize;
-            for (int i = 0; i < this.matrix.getContainerSize(); i++) {
-                ItemStack stackInSlot = this.matrix.getItem(i);
-                //if the stack is empty, refill from storage and then continue looping
-                if (stackInSlot.isEmpty()) {
-                    ItemStack recipeStack = recipeCopy.get(i);
+                crafted += resultStackSize;
+                for (int i = 0; i < this.matrix.getContainerSize(); i++) {
+                    ItemStack stackInSlot = this.matrix.getItem(i);
+                    //if the stack is empty, refill from storage and then continue looping
+                    if (stackInSlot.isEmpty()) {
+                        ItemStack recipeStack = recipeCopy.get(i);
 
-                    ItemStackComparator comparator = !recipeStack.isEmpty() ? new ItemStackComparator(
-                            recipeStack) : null;
+                        ItemStackComparator comparator = !recipeStack.isEmpty() ? new ItemStackComparator(
+                                recipeStack) : null;
 
-                    ItemStack requestedItem = this.getStorageController().getOneOfMostCommonItem(comparator, false);
-                    this.matrix.setItem(i, requestedItem);
+                        ItemStack requestedItem = this.getStorageController().getOneOfMostCommonItem(comparator, false);
+                        this.matrix.setItem(i, requestedItem);
+                    }
                 }
+                this.slotsChanged(this.matrix);
             }
-            this.slotsChanged(this.matrix);
+
+            //now actually give to the players
+            ItemStack finalResult = new ItemStack(result.getItem(), 0);
+            finalResult.applyComponents(result.getComponents());
+            for (ItemStack intermediateResult : resultList) {
+                finalResult.setCount(finalResult.getCount() + intermediateResult.getCount());
+            }
+            ItemTransferUtil.giveItemToPlayer(player, finalResult);
+
+            this.broadcastChanges();
+        } finally {
+            //unlock crafting matrix, even if crafting failed
+            this.recipeLocked = false;
         }
-
-        //now actually give to the players
-        ItemStack finalResult = new ItemStack(result.getItem(), 0);
-        finalResult.applyComponents(result.getComponents());
-        for (ItemStack intermediateResult : resultList) {
-            finalResult.setCount(finalResult.getCount() + intermediateResult.getCount());
-        }
-        ItemTransferUtil.giveItemToPlayer(player, finalResult);
-
-        this.broadcastChanges();
-
-        //unlock crafting matrix
-        this.recipeLocked = false;
 
         //update crafting matrix to handle container items / items that survive crafting
         this.slotsChanged(this.matrix);
