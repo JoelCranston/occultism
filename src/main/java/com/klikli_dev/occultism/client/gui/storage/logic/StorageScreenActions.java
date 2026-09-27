@@ -6,11 +6,11 @@
 
 package com.klikli_dev.occultism.client.gui.storage.logic;
 
-import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.api.common.data.GlobalBlockPos;
 import com.klikli_dev.occultism.api.common.data.MachineReference;
 import com.klikli_dev.occultism.api.common.data.SortDirection;
 import com.klikli_dev.occultism.api.common.data.SortType;
+import com.klikli_dev.occultism.client.render.OccultismRenderers;
 import com.klikli_dev.occultism.network.Networking;
 import com.klikli_dev.occultism.network.messages.*;
 import net.minecraft.client.Minecraft;
@@ -63,8 +63,8 @@ public class StorageScreenActions {
 
     public void highlightMachine(MachineReference machine) {
         long time = System.currentTimeMillis() + 5000;
-        Occultism.SELECTED_BLOCK_RENDERER.selectBlock(machine.insertGlobalPos.getPos(), time, Color.GREEN);
-        Occultism.SELECTED_BLOCK_RENDERER.selectBlock(machine.extractGlobalPos.getPos(), time, Color.YELLOW);
+        OccultismRenderers.SELECTED_BLOCK_RENDERER.selectBlock(machine.insertGlobalPos.getPos(), time, Color.GREEN);
+        OccultismRenderers.SELECTED_BLOCK_RENDERER.selectBlock(machine.extractGlobalPos.getPos(), time, Color.YELLOW);
     }
 
     public void syncSort(BlockPos position, SortDirection sortDirection, SortType sortType) {

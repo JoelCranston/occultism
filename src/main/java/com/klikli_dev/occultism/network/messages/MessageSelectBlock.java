@@ -23,6 +23,7 @@
 package com.klikli_dev.occultism.network.messages;
 
 import com.klikli_dev.occultism.Occultism;
+import com.klikli_dev.occultism.client.render.OccultismRenderers;
 import com.klikli_dev.occultism.network.IMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -57,7 +58,7 @@ public class MessageSelectBlock implements IMessage {
     @Override
     public void onClientReceived(Minecraft minecraft, Player player) {
         Color color = new Color(this.color);
-        Occultism.SELECTED_BLOCK_RENDERER.selectBlock(this.blockPos, System.currentTimeMillis() + this.durationMilliseconds, color);
+        OccultismRenderers.SELECTED_BLOCK_RENDERER.selectBlock(this.blockPos, System.currentTimeMillis() + this.durationMilliseconds, color);
     }
 
     @Override
