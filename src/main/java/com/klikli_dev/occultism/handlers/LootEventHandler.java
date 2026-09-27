@@ -146,10 +146,13 @@ public class LootEventHandler {
             if (OtherworldBlockTier.max(toolTier, staffTier) != OtherworldBlockTier.NONE) {
                 Level level = (Level) event.getLevel();
                 BlockPos pos = event.getPos();
-                ItemEntity itementity = new ItemEntity(level, pos.getX(), pos.getY(), pos.getZ(),
+                ItemEntity itementity = new ItemEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                         new ItemStack(event.getState().getBlock()));
                 level.addFreshEntity(itementity);
-                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 1);
+                //flag 3: notify neighbors and send the change to clients
+                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                //the break is cancelled, so apply the tool damage vanilla would have applied
+                player.getMainHandItem().mineBlock(level, event.getState(), pos, player);
                 event.setCanceled(true);
             }
         }
