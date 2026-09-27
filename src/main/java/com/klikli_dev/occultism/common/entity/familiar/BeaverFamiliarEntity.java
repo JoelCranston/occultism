@@ -174,6 +174,9 @@ public class BeaverFamiliarEntity extends FamiliarEntity {
 
     private static class ChopTreeGoal extends Goal {
 
+        private static final double MAX_TREE_DISTANCE = 32;
+        private static final int MAX_LOGS = 15;
+
         private final BeaverFamiliarEntity beaver;
 
         private ChopTreeGoal(BeaverFamiliarEntity beaver) {
@@ -183,7 +186,12 @@ public class BeaverFamiliarEntity extends FamiliarEntity {
 
         @Override
         public boolean canUse() {
-            return !this.beaver.isSitting() && this.beaver.isAbilityEnabled(this.beaver.getFamiliarOwner()) && this.beaver.treeTarget != null
+            //forget trees that are too far away or no longer loaded
+            if (this.beaver.treeTarget != null && (!this.beaver.treeTarget.closerThan(this.beaver.blockPosition(), MAX_TREE_DISTANCE)
+                    || !this.beaver.level().isLoaded(this.beaver.treeTarget)))
+                this.beaver.treeTarget = null;
+
+            return !this.beaver.isSitting() && this.beaver.treeTarget != null && this.beaver.isAbilityEnabled(this.beaver.getFamiliarOwner())
                     && this.beaver.level().getBlockState(this.beaver.treeTarget).is(BlockTags.LOGS);
         }
 
@@ -210,20 +218,24 @@ public class BeaverFamiliarEntity extends FamiliarEntity {
 
                 positions.add(this.beaver.treeTarget);
 
-                while (!positions.isEmpty() && harvesting.size() < 15) {
+                harvesting.add(this.beaver.treeTarget);
+
+                //positions are marked as harvested when queued, so each log is only queued once
+                while (!positions.isEmpty() && harvesting.size() <= MAX_LOGS) {
                     BlockPos pos = positions.pop();
 
-                    harvesting.add(pos);
                     for (BlockPos p : BlockPos.withinManhattan(pos, 1, 1, 1)) {
                         if (!harvesting.contains(p) && this.beaver.level().getBlockState(p).is(BlockTags.LOGS)) {
-                            positions.add(p.immutable());
-                            harvesting.add(pos);
+                            BlockPos log = p.immutable();
+                            positions.add(log);
+                            harvesting.add(log);
                         }
 
                     }
                 }
 
-                if (!positions.isEmpty()) {
+                //tree is too big
+                if (harvesting.size() > MAX_LOGS) {
                     this.beaver.treeTarget = null;
                     return;
                 }
