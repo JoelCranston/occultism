@@ -109,6 +109,8 @@ public class WildHuntWitherSkeletonEntity extends WitherSkeleton implements Poss
 
     @Override
     public void actuallyHurt(ServerLevel level, DamageSource source, float amount) {
+        //minions may have been unloaded or removed without notifying us, so drop them first
+        this.minions.removeIf(Entity::isRemoved);
         if (!this.minions.isEmpty()) {
             this.minions.forEach(e -> e.addEffect(new MobEffectInstance(MobEffects.GLOWING, 100, 0, false, false)));
         }
@@ -120,6 +122,8 @@ public class WildHuntWitherSkeletonEntity extends WitherSkeleton implements Poss
     public void remove(Entity.RemovalReason reason) {
         super.remove(reason);
         if (this.level() instanceof ServerLevel) {
+            //minions may have been unloaded or removed without notifying us, so drop them first
+            this.minions.removeIf(Entity::isRemoved);
             if (!this.minions.isEmpty()) {
                 this.minions.forEach(e -> {
                     e.setMaster(null);
