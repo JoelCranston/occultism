@@ -86,10 +86,13 @@ public class StorageControllerContainer extends StorageControllerContainerBase {
 
     @Override
     public boolean stillValid(Player player) {
-        if (this.storageController == null)
+        if (this.storageController == null || this.storageController.isRemoved())
             return false;
 
         Level level = this.storageController.getLevel();
+        if (level == null)
+            return false;
+
         BlockPos controllerPosition = this.storageController.getBlockPos();
 
         //close container if block is destroyed

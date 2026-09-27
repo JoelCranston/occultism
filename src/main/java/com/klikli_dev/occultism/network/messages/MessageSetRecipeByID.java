@@ -22,7 +22,7 @@
 package com.klikli_dev.occultism.network.messages;
 
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
-import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
+import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
 import com.klikli_dev.occultism.network.IMessage;
 import com.klikli_dev.occultism.network.Networking;
 import com.klikli_dev.occultism.registry.OccultismItems;
@@ -62,13 +62,12 @@ public class MessageSetRecipeByID implements IMessage {
 
     @Override
     public void onServerReceived(MinecraftServer minecraftServer, ServerPlayer player) {
-        if (!(player.containerMenu instanceof IStorageControllerContainer container)) {
+        //only act on a storage menu that is still valid, otherwise stale menus could be used to dupe items
+        StorageControllerContainerBase container = StorageControllerContainerBase.getValidOpenContainer(player);
+        if (container == null) {
             return;
         }
         IStorageController storageController = container.getStorageController();
-        if (storageController == null) {
-            return;
-        }
 
         ResourceKey<Recipe<?>> recipeKey = ResourceKey.create(Registries.RECIPE, this.id);
         RecipeManager recipeManager = minecraftServer.getRecipeManager();

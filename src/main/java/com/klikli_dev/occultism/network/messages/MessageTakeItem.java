@@ -24,7 +24,7 @@ package com.klikli_dev.occultism.network.messages;
 
 import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
-import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
+import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
 import com.klikli_dev.occultism.common.misc.ItemStackComparator;
 import com.klikli_dev.occultism.network.IMessage;
 import com.klikli_dev.occultism.network.Networking;
@@ -66,11 +66,10 @@ public class MessageTakeItem implements IMessage {
 
     @Override
     public void onServerReceived(MinecraftServer minecraftServer, ServerPlayer player) {
-        if (player.containerMenu instanceof IStorageControllerContainer) {
-            IStorageController storageController = ((IStorageControllerContainer) player.containerMenu)
-                    .getStorageController();
-            if (storageController == null)
-                return;
+        //only act on a storage menu that is still valid, otherwise stale menus could be used to dupe items
+        StorageControllerContainerBase container = StorageControllerContainerBase.getValidOpenContainer(player);
+        if (container != null) {
+            IStorageController storageController = container.getStorageController();
 
             int available = storageController
                     .getAvailableAmount(new ItemStackComparator(this.stack, true));

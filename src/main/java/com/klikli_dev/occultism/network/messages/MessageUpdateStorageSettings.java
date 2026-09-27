@@ -23,8 +23,7 @@
 package com.klikli_dev.occultism.network.messages;
 
 import com.klikli_dev.occultism.Occultism;
-import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
-import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
+import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
 import com.klikli_dev.occultism.api.common.data.SortDirection;
 import com.klikli_dev.occultism.api.common.data.SortType;
 import com.klikli_dev.occultism.common.container.storage.StableWormholeContainer;
@@ -63,8 +62,8 @@ public class MessageUpdateStorageSettings implements IMessage {
 
     @Override
     public void onServerReceived(MinecraftServer minecraftServer, ServerPlayer player) {
-        if (player.containerMenu instanceof IStorageControllerContainer storageContainer) {
-            IStorageController storageController = storageContainer.getStorageController();
+        StorageControllerContainerBase storageContainer = StorageControllerContainerBase.getValidOpenContainer(player);
+        if (storageContainer != null) {
 
             //handle storage remotes
             if (storageContainer instanceof StorageRemoteContainer storageRemoteContainer) {

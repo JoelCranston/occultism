@@ -23,7 +23,7 @@
 package com.klikli_dev.occultism.util;
 
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
-import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
+import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
 import com.klikli_dev.occultism.network.Networking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -33,7 +33,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.Containers;
 import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -68,13 +67,11 @@ public class StorageUtil {
      * @param sendStackUpdate true to resend the current stacks to the client.
      */
     public static void clearOpenCraftingMatrix(ServerPlayer player, boolean sendStackUpdate) {
-        if (player.containerMenu instanceof IStorageControllerContainer container) {
+        //only act on a storage menu that is still valid, otherwise stale menus could be used to dupe items
+        StorageControllerContainerBase container = StorageControllerContainerBase.getValidOpenContainer(player);
+        if (container != null) {
             CraftingContainer craftMatrix = container.getCraftMatrix();
             IStorageController storageController = container.getStorageController();
-
-            if (storageController == null) {
-                return;
-            }
 
             for (int i = 0; i < 9; i++) {
                 ItemStack stackInSlot = craftMatrix.getItem(i);
@@ -100,7 +97,7 @@ public class StorageUtil {
             //finally if requested, send the updated storage controller contents to the player.
             if (sendStackUpdate) {
                 Networking.sendTo(player, storageController.getMessageUpdateStacks());
-                ((AbstractContainerMenu) container).broadcastChanges();
+                container.broadcastChanges();
             }
 
             //update (now empty) contents on the storage accessor
@@ -115,13 +112,11 @@ public class StorageUtil {
      * @param sendStackUpdate true to resend the current stacks to the client.
      */
     public static void clearOpenOrderSlot(ServerPlayer player, boolean sendStackUpdate) {
-        if (player.containerMenu instanceof IStorageControllerContainer container) {
+        //only act on a storage menu that is still valid, otherwise stale menus could be used to dupe items
+        StorageControllerContainerBase container = StorageControllerContainerBase.getValidOpenContainer(player);
+        if (container != null) {
             SimpleContainer orderSlot = container.getOrderSlot();
             IStorageController storageController = container.getStorageController();
-
-            if (storageController == null) {
-                return;
-            }
 
             ItemStack stackInSlot = orderSlot.getItem(0);
             if (!stackInSlot.isEmpty()) {
@@ -140,7 +135,7 @@ public class StorageUtil {
             //finally if requested, send the updated storage controller contents to the player.
             if (sendStackUpdate) {
                 Networking.sendTo(player, storageController.getMessageUpdateStacks());
-                ((AbstractContainerMenu) container).broadcastChanges();
+                container.broadcastChanges();
             }
         }
     }

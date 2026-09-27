@@ -98,6 +98,32 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
         openContainers.put(pos, player.getUUID());
     }
 
+    /**
+     * Gets the storage container the player currently has open, but only if it is still valid:
+     * it has to still pass stillValid and its storage controller must exist and not be removed.
+     * Network handlers must use this before touching storage contents, otherwise stale menus can be used to dupe items.
+     *
+     * @param player the player to get the open container for.
+     * @return the open, valid container or null.
+     */
+    @Nullable
+    public static StorageControllerContainerBase getValidOpenContainer(ServerPlayer player) {
+        if (!(player.containerMenu instanceof StorageControllerContainerBase container))
+            return null;
+
+        if (!container.stillValid(player))
+            return null;
+
+        IStorageController storageController = container.getStorageController();
+        if (storageController == null)
+            return null;
+
+        if (storageController instanceof BlockEntity blockEntity && blockEntity.isRemoved())
+            return null;
+
+        return container;
+    }
+
     @Override
     public ClientStorageCache getClientStorageCache() {
         return this.clientStorageCache;
