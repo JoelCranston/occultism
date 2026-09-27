@@ -25,11 +25,15 @@ package com.klikli_dev.occultism.common.entity.job;
 import com.google.common.collect.ImmutableList;
 import com.klikli_dev.occultism.common.entity.ai.BrainUtil;
 import com.klikli_dev.occultism.common.entity.spirit.SpiritEntity;
+import com.klikli_dev.occultism.registry.OccultismBlocks;
 import com.klikli_dev.occultism.registry.OccultismMemoryTypes;
 import com.klikli_dev.occultism.registry.OccultismSpiritJobs;
+import com.klikli_dev.occultism.util.ItemTransferUtil;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.ActivityData;
@@ -38,7 +42,12 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.sensing.Sensor;
 import net.minecraft.world.entity.ai.sensing.SensorType;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.capabilities.Capabilities.Item;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
 
 import java.util.List;
 
@@ -155,5 +164,36 @@ public abstract class SpiritJob {
 
     public void onChangeWorkArea() {
 
+    }
+
+    /**
+     * Outputs the result of a processing job.
+     * If the spirit stands on a dimensional extractor, the result is inserted into the inventory below it.
+     * Anything that does not fit is dropped, results exceeding the max stack size are split into multiple stacks.
+     *
+     * @param result     the result to output.
+     * @param droppedTag the tag to add to dropped item entities.
+     */
+    protected void outputProcessingResult(ItemStack result, String droppedTag) {
+        Level level = this.entity.level();
+        ResourceHandler<ItemResource> handlerBelow = null;
+        if (level.getBlockState(this.entity.blockPosition().below()).is(OccultismBlocks.DIMENSIONAL_EXTRACTOR)) {
+            //always resolve the handler, the block below may have been replaced or we may have moved since the last output
+            handlerBelow = level.getCapability(Item.BLOCK, this.entity.blockPosition().below(2), Direction.UP);
+        }
+
+        int count = result.getCount();
+        while (count > 0) {
+            int stackCount = Math.min(count, result.getMaxStackSize());
+            count -= stackCount;
+
+            ItemStack remaining = ItemTransferUtil.insertItemStacked(handlerBelow, result.copyWithCount(stackCount), false);
+            if (!remaining.isEmpty()) {
+                ItemEntity droppedItem = this.entity.spawnAtLocation((ServerLevel) level, remaining);
+                if (droppedItem != null) {
+                    droppedItem.addTag(droppedTag);
+                }
+            }
+        }
     }
 }
