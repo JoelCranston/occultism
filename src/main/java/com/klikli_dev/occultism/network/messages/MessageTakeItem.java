@@ -71,6 +71,13 @@ public class MessageTakeItem implements IMessage {
         if (container != null) {
             IStorageController storageController = container.getStorageController();
 
+            if (this.stack.isEmpty())
+                return;
+
+            //never overwrite an item the player is already holding on the mouse, that would delete it.
+            if (!this.isShiftDown && !container.getCarried().isEmpty())
+                return;
+
             int available = storageController
                     .getAvailableAmount(new ItemStackComparator(this.stack, true));
             int amountRequested = 0;
