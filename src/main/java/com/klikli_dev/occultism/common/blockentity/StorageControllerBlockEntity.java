@@ -522,20 +522,30 @@ public class StorageControllerBlockEntity extends NetworkedBlockEntity implement
     @Override
     public void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
-        //linked machines are not saved, they self-register.
 
         //read stored items
         input.read("items", CompoundTag.CODEC).ifPresent(tag -> {
             this.itemStackHandler.deserializeNBT(input.lookup(), tag);
             this.cachedMessageUpdateStacks = null;
         });
+
+        //read the linked machines. They are only saved, not synced via block entity data: the client receives them via MessageUpdateLinkedMachines.
+        this.linkedMachines = new HashMap<>();
+        input.listOrEmpty("linkedMachines", MachineReference.CODEC).forEach(reference -> {
+            this.linkedMachines.put(reference.insertGlobalPos, reference);
+        });
     }
 
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
-        //linked machines are not saved, they self-register.
         output.store("items", CompoundTag.CODEC, this.itemStackHandler.serializeNBT(this.level.registryAccess()));
+
+        //write linked machines
+        var machinesList = output.list("linkedMachines", MachineReference.CODEC);
+        for (Entry<GlobalBlockPos, MachineReference> entry : this.linkedMachines.entrySet()) {
+            machinesList.add(entry.getValue());
+        }
     }
 
     @Override
@@ -550,12 +560,6 @@ public class StorageControllerBlockEntity extends NetworkedBlockEntity implement
         input.read("matrix", CompoundTag.CODEC).ifPresent(tag -> this.matrix = loadMatrix(tag, input.lookup()));
 
         this.orderStack = input.read("orderStack", ItemStack.OPTIONAL_CODEC).orElse(ItemStack.EMPTY);
-
-        //read the linked machines
-        this.linkedMachines = new HashMap<>();
-        input.listOrEmpty("linkedMachines", MachineReference.CODEC).forEach(reference -> {
-            this.linkedMachines.put(reference.insertGlobalPos, reference);
-        });
     }
 
     @Override
@@ -573,11 +577,8 @@ public class StorageControllerBlockEntity extends NetworkedBlockEntity implement
         if (!this.orderStack.isEmpty())
             output.store("orderStack", ItemStack.OPTIONAL_CODEC, this.orderStack);
 
-        //write linked machines
-        var machinesList = output.list("linkedMachines", MachineReference.CODEC);
-        for (Entry<GlobalBlockPos, MachineReference> entry : this.linkedMachines.entrySet()) {
-            machinesList.add(entry.getValue());
-        }
+        //Note: stored items and linked machines are intentionally not part of the network data.
+        //      The client receives them on demand via MessageUpdateStacks / MessageUpdateLinkedMachines while a storage menu is open.
     }
 
     @Override
