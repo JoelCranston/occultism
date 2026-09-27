@@ -23,8 +23,6 @@
 package com.klikli_dev.occultism;
 
 import com.google.common.collect.ImmutableSet;
-import com.klikli_dev.occultism.client.render.SelectedBlockRenderer;
-import com.klikli_dev.occultism.client.render.ThirdEyeEffectRenderer;
 import com.klikli_dev.occultism.common.DebugHelper;
 import com.klikli_dev.occultism.common.entity.familiar.*;
 import com.klikli_dev.occultism.common.entity.possessed.*;
@@ -82,8 +80,6 @@ public class Occultism {
     public static final OccultismCommonConfig COMMON_CONFIG = OccultismCommonConfig.get();
     public static final OccultismClientConfig CLIENT_CONFIG = OccultismClientConfig.get();
     public static final OccultismStartupConfig STARTUP_CONFIG = OccultismStartupConfig.get();
-    public static final SelectedBlockRenderer SELECTED_BLOCK_RENDERER = new SelectedBlockRenderer();
-    public static final ThirdEyeEffectRenderer THIRD_EYE_EFFECT_RENDERER = new ThirdEyeEffectRenderer();
     public static final DebugHelper DEBUG = new DebugHelper();
     public static Occultism INSTANCE;
 

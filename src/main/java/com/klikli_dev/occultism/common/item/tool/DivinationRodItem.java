@@ -25,6 +25,7 @@ package com.klikli_dev.occultism.common.item.tool;
 import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.client.divination.DivinationRodParticleEffect;
 import com.klikli_dev.occultism.client.divination.ScanManager;
+import com.klikli_dev.occultism.client.render.OccultismRenderers;
 import com.klikli_dev.occultism.common.block.otherworld.IOtherworldBlock;
 import com.klikli_dev.occultism.network.Networking;
 import com.klikli_dev.occultism.network.messages.MessageSetDivinationResult;
@@ -286,7 +287,7 @@ public class DivinationRodItem extends Item {
 
     private void showDivinationResult(BlockPos result, Level level, LivingEntity entity) {
         if (Occultism.CLIENT_CONFIG.visuals.useAlternativeDivinationRodRenderer.get()) {
-            Occultism.SELECTED_BLOCK_RENDERER.selectBlock(result, System.currentTimeMillis() + 10000);
+            OccultismRenderers.SELECTED_BLOCK_RENDERER.selectBlock(result, System.currentTimeMillis() + 10000);
             return;
         }
 
