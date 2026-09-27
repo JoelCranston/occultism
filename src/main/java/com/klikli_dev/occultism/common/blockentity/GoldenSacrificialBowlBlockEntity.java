@@ -552,8 +552,10 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
         if (this.castingPlayer == null && this.castingPlayerId != null &&
                 this.level.getGameTime() % (20 * 30) == 0) {
             this.castingPlayer = EntityUtil.getPlayerByUuiDGlobal(this.castingPlayerId).orElse(null);
-            this.setChanged();
-            this.markNetworkDirty();
+            if (this.castingPlayer != null) {
+                this.setChanged();
+                this.markNetworkDirty();
+            }
         }
     }
 
