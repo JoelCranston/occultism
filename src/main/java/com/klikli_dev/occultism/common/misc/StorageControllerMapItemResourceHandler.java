@@ -24,6 +24,7 @@ package com.klikli_dev.occultism.common.misc;
 
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
 import net.neoforged.neoforge.transfer.item.ItemResource;
+import org.jetbrains.annotations.NotNull;
 
 public class StorageControllerMapItemResourceHandler extends MapItemResourceHandler {
 
@@ -32,6 +33,12 @@ public class StorageControllerMapItemResourceHandler extends MapItemResourceHand
     public StorageControllerMapItemResourceHandler(IStorageController storageController, int maxItemTypes, long maxTotalItemCount) {
         super(maxItemTypes, maxTotalItemCount);
         this.storageController = storageController;
+    }
+
+    @Override
+    public boolean isItemValid(int slot, @NotNull ItemResource resource) {
+        //the handler is exposed as capability, so it has to respect the controller blacklist itself.
+        return resource.isEmpty() || !this.storageController.isBlacklisted(resource.toStack());
     }
 
     @Override
