@@ -49,7 +49,9 @@ import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.ItemLike;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.RecipesReceivedEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 
@@ -184,7 +186,17 @@ public class JeiPlugin implements IModPlugin {
     public static class ServerRecipeSync {
         @SubscribeEvent
         public static void onDatapackSync(OnDatapackSyncEvent event) {
-            BattlefieldRecipeJEI.reloadCache();
+            //battlefield recipes are only read by JEI on the client of an integrated server, so there is no need to
+            //generate them (which instantiates every entity type and expands loot tables) on dedicated servers or without JEI.
+            if (FMLEnvironment.getDist().isClient() && ModList.get().isLoaded("jei")) {
+                if (event.getPlayer() == null) {
+                    //datapack reload -> rebuild the cache
+                    BattlefieldRecipeJEI.reloadCache();
+                } else {
+                    //player join -> only builds the cache if it does not exist yet
+                    BattlefieldRecipeJEI.generateServerRecipes();
+                }
+            }
             event.sendRecipes(
                     OccultismRecipes.SPIRIT_FIRE_TYPE.get(),
                     OccultismRecipes.CRUSHING_TYPE.get(),
@@ -200,8 +212,13 @@ public class JeiPlugin implements IModPlugin {
     public static class ClientRecipeSync {
         @SubscribeEvent
         public static void onRecipesReceived(RecipesReceivedEvent event) {
+            //do not touch JeiPlugin if JEI is not present, otherwise loading it would fail due to missing JEI API classes
+            if (!ModList.get().isLoaded("jei"))
+                return;
+
             syncedRecipes = event.getRecipeMap();
-            battlefieldRecipeJEI = BattlefieldRecipeJEI.getCachedRecipes();
+            List<BattlefieldRecipeJEI> cachedRecipes = BattlefieldRecipeJEI.getCachedRecipes();
+            battlefieldRecipeJEI = cachedRecipes != null ? cachedRecipes : new ArrayList<>();
         }
     }
 }
