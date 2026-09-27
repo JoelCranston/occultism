@@ -81,7 +81,8 @@ public class ExtractItemsGoal extends PausableGoal {
 
     @Override
     public boolean canContinueToUse() {
-        return !this.isPaused() && this.targetBlock != null && !this.entity.getItemInHand(InteractionHand.MAIN_HAND).isEmpty();
+        //continue until we have extracted something, then the deposit goal takes over
+        return !this.isPaused() && this.targetBlock != null && this.entity.getItemInHand(InteractionHand.MAIN_HAND).isEmpty();
     }
 
     public void stop() {
@@ -196,14 +197,15 @@ public class ExtractItemsGoal extends PausableGoal {
     }
 
     private void resetTarget() {
+        this.targetBlock = null;
         Optional<BlockPos> targetPos = this.entity.getExtractPosition();
         targetPos.ifPresent((pos) -> {
-            this.targetBlock = pos;
-
-            var rawHandler = this.entity.level().getCapability(Item.BLOCK, this.targetBlock, this.entity.getExtractFacing());
+            var rawHandler = this.entity.level().getCapability(Item.BLOCK, pos, this.entity.getExtractFacing());
             if (rawHandler == null) {
                 //the extract block is not valid for extracting, so we disable this to allow exiting this task.
                 this.entity.setExtractPosition(null);
+            } else {
+                this.targetBlock = pos;
             }
         });
     }
