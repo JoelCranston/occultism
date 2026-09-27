@@ -404,8 +404,15 @@ public class CthulhuFamiliarEntity extends FamiliarEntity {
 
         @Override
         public boolean canUse() {
+            //cheap checks first, only search for a devil once the cooldown is over
+            if (this.cthulhu.isVehicle())
+                return false;
+            if (this.cooldown >= 0) {
+                this.cooldown--;
+                return false;
+            }
             this.devil = this.findDevil();
-            return this.devil != null && this.cooldown-- < 0 && this.cthulhu.distanceToSqr(this.devil) > 3 && !this.cthulhu.isVehicle();
+            return this.devil != null && this.cthulhu.distanceToSqr(this.devil) > 3;
         }
 
         @Override
