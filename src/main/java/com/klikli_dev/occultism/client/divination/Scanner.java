@@ -63,15 +63,30 @@ public class Scanner {
         this.center = center;
         this.radius = radius;
         this.radiusSquared = this.radius * this.radius;
-        this.min = BlockPos.containing(center).offset(Mth.floor(-this.radius), Mth.floor(-this.radius), Mth.floor(-this.radius));
-        this.max = BlockPos.containing(center).offset(Mth.floor(this.radius), Mth.floor(this.radius), Mth.floor(this.radius));
+        Level level = player.level();
+        BlockPos centerPos = BlockPos.containing(center);
+        int minOffset = Mth.floor(-this.radius);
+        int maxOffset = Mth.floor(this.radius);
+        //clamp the scanned height to the level's build height, there is nothing to find outside of it
+        this.min = new BlockPos(centerPos.getX() + minOffset, Math.max(centerPos.getY() + minOffset, level.getMinY()), centerPos.getZ() + minOffset);
+        this.max = new BlockPos(centerPos.getX() + maxOffset, Math.min(centerPos.getY() + maxOffset, level.getMaxY()), centerPos.getZ() + maxOffset);
         this.x = this.min.getX();
         this.y = this.min.getY() - 1;//first move next increments this to min.getY();
         this.z = this.min.getZ();
 
-        BlockPos size = this.max.subtract(this.min);
-        int blockCount = (size.getX() + 1) * (size.getY() + 1) * (size.getZ() + 1);
-        this.blocksPerTick = Mth.ceil(blockCount / (float) totalTicks);
+        if (this.min.getY() > this.max.getY()) {
+            //scan area is entirely outside the build height, nothing to scan
+            this.blocksPerTick = 0;
+            return;
+        }
+
+        //use long math, large scan ranges would overflow int
+        long sizeX = (long) this.max.getX() - this.min.getX() + 1;
+        long sizeY = (long) this.max.getY() - this.min.getY() + 1;
+        long sizeZ = (long) this.max.getZ() - this.min.getZ() + 1;
+        long blockCount = sizeX * sizeY * sizeZ;
+        long ticks = Math.max(1, totalTicks);
+        this.blocksPerTick = (int) Math.max(1, Math.min(Integer.MAX_VALUE, (blockCount + ticks - 1) / ticks));
     }
 
     public void reset() {
@@ -85,6 +100,7 @@ public class Scanner {
 
     public void scan(Consumer<BlockPos> resultConsumer) {
         Level level = this.player.level();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int i = 0; i < this.blocksPerTick; i++) {
             //move to next block
             if (!this.nextBlock(level)) {
@@ -96,19 +112,25 @@ public class Scanner {
                 continue;
             }
 
-            BlockPos pos = new BlockPos(this.x, this.y, this.z);
+            pos.set(this.x, this.y, this.z);
+
+            //skip unloaded chunks, they would only report empty blocks anyway
+            if (!level.hasChunkAt(pos)) {
+                continue;
+            }
+
             BlockState state = level.getBlockState(pos);
 
             //if this is the block we search for, consume it.
             if (this.isValidBlock(state)) {
-                resultConsumer.accept(pos);
+                resultConsumer.accept(pos.immutable());
             }
         }
     }
 
     public boolean nextBlock(Level level) {
         this.y++;
-        if (this.y > this.max.getY() || this.y >= level.getHeight()) {
+        if (this.y > this.max.getY()) {
             this.y = this.min.getY();
             this.x++;
             if (this.x > this.max.getX()) {
