@@ -1,6 +1,8 @@
 package com.klikli_dev.occultism.network.messages;
 
+import com.klikli_dev.modonomicon.api.ModonomiconAPI;
 import com.klikli_dev.occultism.Occultism;
+import com.klikli_dev.occultism.common.item.tool.ritual_satchel.RitualSatchelItem;
 import com.klikli_dev.occultism.network.IMessage;
 import com.klikli_dev.occultism.registry.OccultismItems;
 import net.minecraft.core.BlockPos;
@@ -45,6 +47,13 @@ public class MessageSendPreviewedPentacle implements IMessage {
 
     @Override
     public void onServerReceived(MinecraftServer minecraftServer, ServerPlayer player) {
+        //validate the client data, the satchels will simulate the multiblock at the anchor
+        if (this.facing == null || !RitualSatchelItem.isValidPentacleTarget(player.level(), this.anchor, this.target))
+            return;
+
+        if (ModonomiconAPI.get().getMultiblock(this.multiblock) == null)
+            return;
+
         OccultismItems.RITUAL_SATCHEL_T1.get().setTargetPentacle(player.getUUID(), this.multiblock, this.anchor, this.facing, this.target, player.level().getGameTime());
         OccultismItems.RITUAL_SATCHEL_T2.get().setTargetPentacle(player.getUUID(), this.multiblock, this.anchor, this.facing, this.target, player.level().getGameTime());
     }
