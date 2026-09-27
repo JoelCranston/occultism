@@ -210,7 +210,8 @@ public class ManageMachineGoal extends Goal {
     }
 
     protected BlockEntity findClosestStorageProxy() {
-        if (this.cachedStorageAccessor != null && this.cachedStorageAccessorOrder == this.job.getCurrentDepositOrder())
+        if (this.cachedStorageAccessor != null && !this.cachedStorageAccessor.isRemoved() &&
+                this.cachedStorageAccessorOrder == this.job.getCurrentDepositOrder())
             return this.cachedStorageAccessor;
 
         Level level = this.entity.level();

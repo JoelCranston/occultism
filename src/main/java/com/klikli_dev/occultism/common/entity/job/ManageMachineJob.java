@@ -105,7 +105,8 @@ public class ManageMachineJob extends SpiritJob {
         if (this.managedMachine == null)
             return null;
 
-        if (this.managedMachineBlockEntity == null) {
+        //re-resolve if the cached block entity was removed or replaced
+        if (this.managedMachineBlockEntity == null || this.managedMachineBlockEntity.isRemoved()) {
             this.managedMachineBlockEntity = BlockEntityUtil.get(this.entity.level(), this.managedMachine.insertGlobalPos);
 
         }
@@ -117,7 +118,8 @@ public class ManageMachineJob extends SpiritJob {
         if (this.managedMachine == null)
             return null;
 
-        if (this.extractBlockEntity == null) {
+        //re-resolve if the cached block entity was removed or replaced
+        if (this.extractBlockEntity == null || this.extractBlockEntity.isRemoved()) {
             this.extractBlockEntity = BlockEntityUtil.get(this.entity.level(), this.managedMachine.extractGlobalPos);
 
         }
