@@ -118,7 +118,7 @@ public class MessageTakeItem implements IMessage {
             }
 
             //finally, update the storage controller stacks
-            Networking.sendTo(player, storageController.getMessageUpdateStacks());
+            container.sendStorageUpdates(player, false);
             player.containerMenu.broadcastChanges();
         }
     }

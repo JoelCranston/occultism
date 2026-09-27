@@ -26,7 +26,6 @@ import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
 import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
 import com.klikli_dev.occultism.common.misc.ItemStackComparator;
 import com.klikli_dev.occultism.network.IMessage;
-import com.klikli_dev.occultism.network.Networking;
 import com.klikli_dev.occultism.util.StorageUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -133,7 +132,7 @@ public class MessageSetRecipe implements IMessage {
         //sync to client
         container.updateCraftingSlots(true);
         //finally update controller content for client
-        Networking.sendTo(player, storageController.getMessageUpdateStacks());
+        container.sendStorageUpdates(player, false);
     }
 
     @Override

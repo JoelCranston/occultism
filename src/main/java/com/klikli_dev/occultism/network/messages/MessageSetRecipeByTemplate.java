@@ -27,7 +27,6 @@ import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
 import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
 import com.klikli_dev.occultism.network.IMessage;
-import com.klikli_dev.occultism.network.Networking;
 import com.klikli_dev.occultism.util.StorageUtil;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.Registries;
@@ -137,7 +136,7 @@ public class MessageSetRecipeByTemplate implements IMessage {
         //sync to client
         container.updateCraftingSlots(true);
         //finally update controller content for client
-        Networking.sendTo(player, storageController.getMessageUpdateStacks());
+        container.sendStorageUpdates(player, false);
     }
 
     private int sanitizeRecipeAmount(int recipeAmount) {

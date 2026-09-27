@@ -24,7 +24,6 @@ package com.klikli_dev.occultism.util;
 
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
 import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
-import com.klikli_dev.occultism.network.Networking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.recipebook.PlaceRecipeHelper;
@@ -96,7 +95,7 @@ public class StorageUtil {
 
             //finally if requested, send the updated storage controller contents to the player.
             if (sendStackUpdate) {
-                Networking.sendTo(player, storageController.getMessageUpdateStacks());
+                container.sendStorageUpdates(player, false);
                 container.broadcastChanges();
             }
 
@@ -134,7 +133,7 @@ public class StorageUtil {
 
             //finally if requested, send the updated storage controller contents to the player.
             if (sendStackUpdate) {
-                Networking.sendTo(player, storageController.getMessageUpdateStacks());
+                container.sendStorageUpdates(player, false);
                 container.broadcastChanges();
             }
         }

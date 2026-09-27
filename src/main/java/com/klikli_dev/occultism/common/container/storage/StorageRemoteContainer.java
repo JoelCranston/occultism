@@ -27,15 +27,12 @@ import com.klikli_dev.occultism.api.common.data.GlobalBlockPos;
 import com.klikli_dev.occultism.common.container.storage.layout.StorageMenuVariant;
 import com.klikli_dev.occultism.common.item.storage.StorageRemoteItem;
 import com.klikli_dev.occultism.common.misc.StorageControllerCraftingInventory;
-import com.klikli_dev.occultism.network.Networking;
-import com.klikli_dev.occultism.network.messages.MessageUpdateLinkedMachines;
 import com.klikli_dev.occultism.registry.OccultismContainers;
 import com.klikli_dev.occultism.registry.OccultismDataComponents;
 import com.klikli_dev.occultism.util.CuriosUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
@@ -122,15 +119,6 @@ public class StorageRemoteContainer extends StorageControllerContainerBase {
     @Override
     public boolean stillValid(Player entityPlayer) {
         IStorageController storageController = this.getStorageController();
-
-        //stillValid is constantly called, so we use it to send
-        //stack updates every 40 ticks.
-        if (storageController != null && !entityPlayer.level().isClientSide() &&
-                entityPlayer.level().getGameTime() % 40 == 0) {
-            Networking.sendTo((ServerPlayer) this.player, this.getStorageController().getMessageUpdateStacks());
-            Networking.sendTo((ServerPlayer) this.player,
-                    new MessageUpdateLinkedMachines(this.getStorageController().getLinkedMachines()));
-        }
 
         //close container if storage controller block is destroyed ( -> if it is null here, this check is a bit different from the wormhole, because getStorageController() already handles that)
         return storageController != null && this.getStorageRemote() != ItemStack.EMPTY;
