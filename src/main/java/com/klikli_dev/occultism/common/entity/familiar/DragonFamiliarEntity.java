@@ -190,23 +190,21 @@ public class DragonFamiliarEntity extends FamiliarEntity {
     @Override
     public void curioTick(LivingEntity wearer) {
         Level level = wearer.level();
-        if (this.isAbilityEnabled(wearer) && this.hasBlacksmithUpgrade() && !level.isClientSide() && level.getGameTime() % 64 == 0) {
-            List<Monster> enemies = level.getEntitiesOfClass(Monster.class,
-                    wearer.getBoundingBox().inflate(50),
-                    enemy -> {
-                        Vec3 start = wearer.getEyePosition();
-                        Vec3 end = enemy.getEyePosition();
-                        BlockHitResult hit = level.clip(new ClipContext(
-                                start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, wearer));
-                        return hit.getType() == HitResult.Type.MISS && enemy.isAlive();
-                    }
-            );
+        if (this.hasBlacksmithUpgrade() && !level.isClientSide() && level.getGameTime() % 64 == 0 && this.isAbilityEnabled(wearer)) {
+            List<Monster> enemies = new ArrayList<>(level.getEntitiesOfClass(Monster.class,
+                    wearer.getBoundingBox().inflate(50), Entity::isAlive));
 
-            if (enemies.isEmpty())
-                return;
-
-            Entity enemy = enemies.get(wearer.getRandom().nextInt(enemies.size()));
-            thrownSword(wearer, wearer, enemy);
+            //raycasting is expensive, so pick random enemies until we find a visible one instead of checking all of them
+            Vec3 start = wearer.getEyePosition();
+            while (!enemies.isEmpty()) {
+                Monster enemy = enemies.remove(wearer.getRandom().nextInt(enemies.size()));
+                BlockHitResult hit = level.clip(new ClipContext(
+                        start, enemy.getEyePosition(), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, wearer));
+                if (hit.getType() == HitResult.Type.MISS) {
+                    this.thrownSword(wearer, wearer, enemy);
+                    return;
+                }
+            }
         }
     }
 
