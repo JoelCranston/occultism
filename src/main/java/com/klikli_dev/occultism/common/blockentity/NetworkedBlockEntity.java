@@ -27,10 +27,12 @@ import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.ValueOutput;
 import org.jspecify.annotations.NonNull;
 
@@ -59,7 +61,10 @@ public abstract class NetworkedBlockEntity extends BlockEntity {
 
     @Override
     public @NonNull CompoundTag getUpdateTag(@NonNull Provider provider) {
-        return this.saveWithoutMetadata(provider);
+        //only send the network data, the client only reads that in handleUpdateTag/onDataPacket anyway.
+        var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, provider);
+        this.saveNetwork(output);
+        return output.buildResult();
     }
 
     @Override
