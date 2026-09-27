@@ -107,18 +107,22 @@ public class BlacksmithFamiliarEntity extends FamiliarEntity {
         if (playerIn == this.getFamiliarOwner() && this.ironCount < getMaxIron()
                 && (stack.is(Items.INGOTS_IRON) || stack.is(Items.STORAGE_BLOCKS_IRON))) {
             if (!this.level().isClientSide()) {
+                //check the item before shrinking, a shrunk last item is empty
+                int amount = stack.is(Items.INGOTS_IRON) ? 1 : 9;
                 stack.shrink(1);
-                this.changeIronCount(stack.is(Items.INGOTS_IRON) ? 1 : 9);
+                this.changeIronCount(amount);
             }
-            return !this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         }
         if (this.hasIesniumUpgrade() && playerIn == this.getFamiliarOwner() && this.iesniumCount < getMaxIesnium()
                 && (stack.is(OccultismTags.Items.IESNIUM_INGOT) || stack.is(OccultismTags.Items.STORAGE_BLOCK_IESNIUM))) {
             if (!this.level().isClientSide()) {
+                //check the item before shrinking, a shrunk last item is empty
+                int amount = stack.is(OccultismTags.Items.IESNIUM_INGOT) ? 1 : 9;
                 stack.shrink(1);
-                this.changeIesniumCount(stack.is(OccultismTags.Items.IESNIUM_INGOT) ? 1 : 9);
+                this.changeIesniumCount(amount);
             }
-            return !this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         }
         if (this.hasBlacksmithUpgrade() && !this.hasIesniumUpgrade()
                 && playerIn == this.getFamiliarOwner()
@@ -127,7 +131,7 @@ public class BlacksmithFamiliarEntity extends FamiliarEntity {
                 stack.shrink(1);
                 this.iesniumUpgrade();
             }
-            return !this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         }
 
         return super.mobInteract(playerIn, hand);
