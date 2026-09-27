@@ -103,11 +103,18 @@ public class EntityUtil {
         return BuiltInRegistries.ENTITY_TYPE.getOptional(typeId).orElse(null);
     }
 
+    /**
+     * Gets an entity type from the given tag, cycling through the tag contents over time.
+     *
+     * @return the entity type, or null if the tag contains no (non-player) entity types.
+     */
     public static EntityType<?> getEntityInTag(Level level, TagKey<EntityType<?>> tag) {
         HolderLookup<EntityType<?>> lookup = level.registryAccess().lookupOrThrow(Registries.ENTITY_TYPE);
         HolderSet<EntityType<?>> set = lookup.getOrThrow(tag);
         List<? extends EntityType<?>> list = set.stream().map(Holder::value)
                 .filter(type -> type != EntityType.PLAYER).toList();
+        if (list.isEmpty())
+            return null;
         return list.get(list.size() == 1 ? 0 : (int) ((System.currentTimeMillis() / 2880) % list.size()));
     }
 
