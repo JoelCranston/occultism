@@ -108,7 +108,8 @@ public class SpiritFireBlock extends BaseFireBlock {
 
     @Override
     public void entityInside(BlockState pState, Level pLevel, BlockPos pPos, Entity pEntity, InsideBlockEffectApplier effectApplier, boolean isPrecise) {
-        if (pLevel instanceof ServerLevel serverLevel && pEntity instanceof ItemEntity item) {
+        //only check for recipes every 10 ticks, as recipe lookups are expensive and this is called every tick
+        if (pLevel instanceof ServerLevel serverLevel && pEntity instanceof ItemEntity item && item.tickCount % 10 == 0) {
             var recipeInput =
                     new SingleRecipeInput(item.getItem());
             var recipe =
@@ -119,7 +120,10 @@ public class SpiritFireBlock extends BaseFireBlock {
 
                 ItemStack result = recipe.get().value().assemble(recipeInput);
                 Vec3 center = Math3DUtil.center(pPos);
-                Containers.dropItemStack(pLevel, center.x, center.y + 0.5, center.z, result);
+                //the result count is based on the input count, so split it into valid stack sizes
+                while (!result.isEmpty()) {
+                    Containers.dropItemStack(pLevel, center.x, center.y + 0.5, center.z, result.split(result.getMaxStackSize()));
+                }
 
                 pLevel.playSound(null, pPos, OccultismSounds.SPIRIT_FIRE.get(), SoundSource.BLOCKS, 1, 1);
             }
