@@ -31,10 +31,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.IntProvider;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity.RemovalReason;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LightningBolt;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.function.Supplier;
 
@@ -87,12 +83,9 @@ public abstract class ChangeWeatherJob extends SpiritJob {
                             0.0);
         }
 
-        if (this.currentChangeTicks == this.requiredChangeTicks.get()) {
+        //>= instead of == so we still finish if the required ticks changed (e.g. config) after we passed them
+        if (this.currentChangeTicks >= this.requiredChangeTicks.get()) {
             this.changeWeather();
-
-            LightningBolt lightningboltentity = EntityType.LIGHTNING_BOLT.create(this.entity.level(), EntitySpawnReason.COMMAND);
-            lightningboltentity.snapTo(Vec3.atBottomCenterOf(this.entity.blockPosition()));
-            lightningboltentity.setVisualOnly(true);
 
             this.entity.die(this.entity.damageSources().lightningBolt());
             this.entity.remove(RemovalReason.DISCARDED);
