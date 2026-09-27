@@ -24,6 +24,8 @@ package com.klikli_dev.occultism.common.entity.familiar;
 
 import com.klikli_dev.occultism.registry.OccultismItems;
 import com.klikli_dev.occultism.registry.OccultismTags.Items;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -46,9 +48,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.TypedEntityData;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.TagValueOutput;
 
 public class IesniumGolemEntity extends IronGolem {
+
+    private static final int MAX_RESCUE_HEIGHT = 256;
 
     public IesniumGolemEntity(EntityType<? extends IronGolem> type,
                               Level worldIn) {
@@ -82,15 +87,8 @@ public class IesniumGolemEntity extends IronGolem {
 
     @Override
     public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
-        if (source.is(DamageTypes.FELL_OUT_OF_WORLD)) {
-            var spawnPos = this.level().getRespawnData().pos();
-            this.teleportTo(spawnPos.getX(), spawnPos.getY(), spawnPos.getZ());
-            while (!this.level().getBlockState(this.getOnPos()).getBlock().isPossibleToRespawnInThis(this.level().getBlockState(this.getOnPos()))
-                    || !this.level().getBlockState(this.getOnPos(1)).getBlock().isPossibleToRespawnInThis(this.level().getBlockState(this.getOnPos(1)))
-                    || !this.level().getBlockState(this.getOnPos(2)).getBlock().isPossibleToRespawnInThis(this.level().getBlockState(this.getOnPos(2)))
-                    || !this.level().getBlockState(this.getOnPos(3)).getBlock().isPossibleToRespawnInThis(this.level().getBlockState(this.getOnPos(3))))
-                this.teleportRelative(0, 1, 0);
-        }
+        if (source.is(DamageTypes.FELL_OUT_OF_WORLD))
+            this.rescueFromVoid();
 
         if (source.getWeaponItem() != null && source.getWeaponItem().is(Items.TOOLS_KNIFE_IESNIUM))
             return false;
@@ -99,6 +97,23 @@ public class IesniumGolemEntity extends IronGolem {
             return true;
 
         return super.isInvulnerableTo(level, source);
+    }
+
+    private void rescueFromVoid() {
+        //find a free spot above the spawn first and teleport once, instead of teleporting upwards block by block without limit
+        BlockPos.MutableBlockPos pos = this.level().getRespawnData().pos().mutable();
+        for (int i = 0; i < MAX_RESCUE_HEIGHT && !this.isRescueSpot(pos); i++)
+            pos.move(Direction.UP);
+        this.teleportTo(pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    private boolean isRescueSpot(BlockPos pos) {
+        for (int i = 1; i <= 3; i++) {
+            BlockState state = this.level().getBlockState(pos.below(i));
+            if (!state.getBlock().isPossibleToRespawnInThis(state))
+                return false;
+        }
+        return true;
     }
 
     @Override
