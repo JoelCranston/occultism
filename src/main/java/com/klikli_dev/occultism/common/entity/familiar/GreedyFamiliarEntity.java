@@ -364,8 +364,13 @@ public class GreedyFamiliarEntity extends FamiliarEntity implements IFilterConfi
     public static class FindItemGoal extends Goal {
 
         private static final double RANGE = 12;
+        private static final int SEARCH_INTERVAL = 10;
+        private static final int PATH_INTERVAL = 10;
 
         private final FamiliarEntity entity;
+        private ItemEntity target;
+        private int searchCooldown;
+        private int pathCooldown;
 
         public FindItemGoal(FamiliarEntity entity) {
             this.entity = entity;
@@ -374,26 +379,54 @@ public class GreedyFamiliarEntity extends FamiliarEntity implements IFilterConfi
 
         @Override
         public boolean canUse() {
-            return this.getNearbyItem() != null && this.entity.getFamiliarOwner() instanceof Player;
+            //cheap checks first, searching for items is expensive so only do it every few ticks
+            if (!(this.entity.getFamiliarOwner() instanceof Player))
+                return false;
+            if (this.searchCooldown-- > 0)
+                return false;
+            this.searchCooldown = SEARCH_INTERVAL;
+
+            this.target = this.getNearbyItem();
+            return this.target != null;
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            return this.target != null && this.target.isAlive() && this.entity.getFamiliarOwner() instanceof Player;
         }
 
         @Override
         public void start() {
-            ItemEntity item = this.getNearbyItem();
-            if (item != null)
-                this.entity.getNavigation().moveTo(item, 1.2);
+            this.pathCooldown = 0;
+        }
+
+        @Override
+        public void stop() {
+            this.target = null;
+            //look for the next item right away
+            this.searchCooldown = 0;
         }
 
         @Override
         public void tick() {
-            ItemEntity item = this.getNearbyItem();
-            if (item != null) {
+            ItemEntity item = this.target;
+            if (item == null)
+                return;
+
+            if (--this.pathCooldown <= 0) {
+                this.pathCooldown = PATH_INTERVAL;
                 this.entity.getNavigation().moveTo(item, 1.2);
-                LivingEntity owner = this.entity.getFamiliarOwner();
-                if (item.distanceToSqr(this.entity) < 4 && owner instanceof Player player) {
-                    item.playerTouch(player);
+            }
+
+            LivingEntity owner = this.entity.getFamiliarOwner();
+            if (item.distanceToSqr(this.entity) < 4 && owner instanceof Player player) {
+                int count = item.getItem().getCount();
+                item.playerTouch(player);
+                //only award the advancement if something was actually picked up
+                if (item.isRemoved() || item.getItem().getCount() < count)
                     OccultismAdvancements.FAMILIAR.get().trigger(owner, Type.GREEDY_ITEM);
-                }
+                //done with this item, either it was picked up or it cannot be picked up right now
+                this.target = null;
             }
         }
 
@@ -402,10 +435,10 @@ public class GreedyFamiliarEntity extends FamiliarEntity implements IFilterConfi
             if (!(owner instanceof Player player))
                 return null;
 
-            var inv = PlayerInventoryWrapper.of(player).getMainSlots();
             GreedyFamiliarEntity greedy = this.getGreedyFamiliar();
             if (greedy == null)
                 return null;
+            var inv = PlayerInventoryWrapper.of(player).getMainSlots();
 
             for (ItemEntity item : this.entity.level().getEntitiesOfClass(ItemEntity.class,
                     this.entity.getBoundingBox().inflate(RANGE), e -> e.isAlive())) {
@@ -414,6 +447,7 @@ public class GreedyFamiliarEntity extends FamiliarEntity implements IFilterConfi
                 boolean isStackDemagnetized = false;//TODO: Find what the updated convention is for stack.hasTag() && stack.getTag().getBoolean("PreventRemoteMovement");
                 boolean isEntityDemagnetized = item.getPersistentData().getBoolean("PreventRemoteMovement").orElse(false);
 
+                //cheap checks first, the inventory insert simulation is the most expensive one
                 if ((!isStackDemagnetized && !isEntityDemagnetized)
                         && greedy.canPickupItem(item)
                         && ItemTransferUtil.insertItemStacked(inv, stack, true).getCount() != stack.getCount())
