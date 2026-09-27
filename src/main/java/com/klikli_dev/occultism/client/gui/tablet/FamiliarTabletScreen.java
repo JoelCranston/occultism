@@ -371,7 +371,7 @@ public class FamiliarTabletScreen extends Screen implements GuiHost, LayoutScree
         List<Holder<MobEffect>> options = this.availableMobEffects();
         if (options.isEmpty())
             return;
-        this.selectedEffect = Math.clamp(options.size() - 1, 0, nextIndex);
+        this.selectedEffect = Math.clamp(nextIndex, 0, options.size() - 1);
         this.selectedHolder = options.get(this.selectedEffect);
         if (this.slider != null && this.selectedFamiliar != null && this.selectedHolder != null) {
             this.slider.setValues(this.availableLevels());
