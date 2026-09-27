@@ -47,7 +47,7 @@ public class ClientPentacleManager {
                 lastPentacleQueryTime = mc.level.getGameTime();
                 lastHovered = pos;
                 allPentacles = OccultismRecipeManager.get().getRecipesByType(OccultismRecipes.RITUAL_TYPE.get(), mc.level).stream()
-                        .filter(r -> r.value().getPentacle().validate(mc.level, pos) != null)
+                        .filter(r -> r.value().getPentacle() != null && r.value().getPentacle().validate(mc.level, pos) != null)
                         .collect(Collectors.toMap(
                                 r -> r.value().getPentacle().getId(),
                                 Function.identity(),
