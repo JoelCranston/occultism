@@ -22,12 +22,9 @@
 
 package com.klikli_dev.occultism.util;
 
-import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.api.common.data.GlobalBlockPos;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.util.ProblemReporter;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -35,7 +32,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk.EntityCreationType;
-import net.minecraft.world.level.storage.TagValueOutput;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
@@ -122,28 +118,17 @@ public class BlockEntityUtil {
     }
 
     /**
-     * Handles the common use case of giving self as item with block entity nbt.
+     * Handles the common use case of giving self as item (pick block) for blocks with block entity data.
+     * <p>
+     * We intentionally return the plain item: when data should be included (includeData, e.g. ctrl + pick block in creative)
+     * vanilla already copies the block entity components and custom data onto the returned stack server side.
+     * Serializing the block entity here (e.g. the full storage controller contents) was expensive and the result was discarded.
      *
      * @param block the current block.
      * @param level the level
      * @param pos   the position.
      */
     public static ItemStack getItemWithNbt(Block block, LevelReader level, BlockPos pos) {
-        ItemStack itemStack = new ItemStack(block);
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-
-        if (blockEntity != null) {
-            // Get the block entity data and set it on the item stack
-            var tag = blockEntity.saveWithoutMetadata(level.registryAccess());
-            if (!tag.isEmpty()) {
-                var output = TagValueOutput.createWithoutContext(
-                        ProblemReporter.DISCARDING);
-                BlockItem.setBlockEntityData(itemStack, blockEntity.getType(), output);
-            }
-        } else {
-            Occultism.LOGGER.warn("BlockEntity is null for block {} at pos {}, cannot get ItemStack with Components", block, pos);
-        }
-
-        return itemStack;
+        return new ItemStack(block);
     }
 }
