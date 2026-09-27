@@ -158,6 +158,10 @@ public abstract class FamiliarEntity extends PathfinderMob implements IFamiliar 
 
         this.setHealth(health);
 
+        //the equipment is stored in the soul shard, clear it so it is not dropped on death as well
+        for (EquipmentSlot slot : EquipmentSlot.values())
+            this.setItemSlot(slot, ItemStack.EMPTY);
+
         if (owner instanceof Player player) {
             ItemTransferUtil.giveItemToPlayer(player, shard);
         } else {

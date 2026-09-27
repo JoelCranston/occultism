@@ -31,6 +31,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.animal.parrot.Parrot;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -76,6 +77,10 @@ public class WingnisEntity extends OtherworldBirdEntity {
         shard.set(DataComponents.ENTITY_DATA, TypedEntityData.of(this.getType(), entityData));
 
         this.setHealth(health);
+
+        //the equipment is stored in the soul shard, clear it so it is not dropped on death as well
+        for (EquipmentSlot slot : EquipmentSlot.values())
+            this.setItemSlot(slot, ItemStack.EMPTY);
 
         if (owner instanceof Player player) {
             ItemTransferUtil.giveItemToPlayer(player, shard);
