@@ -62,7 +62,12 @@ public class MessageInsertMouseHeldItem implements IMessage {
             IStorageController storageController = container.getStorageController();
 
             ItemStack result = ItemStack.EMPTY;
-            ItemStack carriedByMouse = player.containerMenu.getCarried();
+            ItemStack carriedByMouse = container.getCarried();
+
+            //nothing to insert, or an unknown button that would otherwise delete the held item
+            if (carriedByMouse.isEmpty() ||
+                    (this.mouseButton != InputUtil.MOUSE_BUTTON_LEFT && this.mouseButton != InputUtil.MOUSE_BUTTON_RIGHT))
+                return;
 
             if (this.mouseButton == InputUtil.MOUSE_BUTTON_LEFT) {
                 //Left mouse button means try to insert entire stack
