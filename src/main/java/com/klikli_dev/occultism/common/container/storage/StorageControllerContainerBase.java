@@ -422,8 +422,10 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
                         else if (ItemStack.isSameItem(stackInSlot, currentCraftingItem)) {
                             this.matrix.setItem(currentSlot, currentCraftingItem);
                         } else {
-                            //last resort, try to place in player inventory or if that fails, drop.
-                            ItemTransferUtil.giveItemToPlayer(player, newResult);
+                            //last resort, like vanilla ResultSlot#onTake: consume the ingredient and
+                            //place the remainder in the player inventory or if that fails, drop it.
+                            this.matrix.removeItem(currentSlot, 1);
+                            ItemTransferUtil.giveItemToPlayer(player, currentCraftingItem);
                         }
 
                     } else if (!stackInSlot.isEmpty()) {
