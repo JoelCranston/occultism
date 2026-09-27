@@ -54,6 +54,7 @@ import com.klikli_dev.occultism.registry.OccultismDataComponents;
 import com.klikli_dev.occultism.registry.OccultismItems;
 import com.klikli_dev.occultism.util.EntityUtil;
 import com.klikli_dev.occultism.util.Math3DUtil;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup.Provider;
@@ -78,6 +79,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.registries.DeferredBlock;
+import net.neoforged.neoforge.transfer.item.ItemResource;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -235,20 +237,6 @@ public class StorageControllerBlockEntity extends NetworkedBlockEntity implement
     protected void validateLinkedMachines() {
         // remove all entries that lead to invalid block entities.
         this.linkedMachines.entrySet().removeIf(entry -> !entry.getValue().isValidFor(this.level));
-    }
-
-    private List<Predicate<ItemStack>> getComparatorsSortedByAmount(Predicate<ItemStack> comparator) {
-        var handler = this.itemStackHandler;
-        var map = new HashMap<Item, Integer>();
-        for (int i = 0; i < handler.getSlots(); i++) {
-            var getStackInSlot = handler.getStackInSlot(i);
-            if (comparator.test(getStackInSlot)) {
-                var oldCount = map.getOrDefault(getStackInSlot.getItem(), 0);
-                map.put(getStackInSlot.getItem(), oldCount + getStackInSlot.getCount());
-            }
-        }
-        return map.entrySet().stream().sorted((a, b) -> b.getValue().compareTo(a.getValue()))
-                .map(entry -> (Predicate<ItemStack>) stack -> stack.getItem() == entry.getKey()).toList();
     }
 
     private PlayState predicate(AnimationTest<StorageControllerBlockEntity> event) {
@@ -436,30 +424,43 @@ public class StorageControllerBlockEntity extends NetworkedBlockEntity implement
             return ItemStack.EMPTY;
         }
 
-        var comparators = this.getComparatorsSortedByAmount(comparator);
+        var handler = this.itemStackHandler;
 
-        //we start with the comparator representing the most common item, and if we don't find anything we move on.
-        //Note: unless something weird happens we should always find something.
-        for (var currentComparator : comparators) {
-            for (int slot = 0; slot < this.itemStackHandler.getSlots(); slot++) {
+        //sum up the matching amounts per item (over all component variants), remembering the first matching variant in slot order.
+        //we test the comparator against the stored resources directly, so no (simulated) extraction happens while searching.
+        Object2IntOpenHashMap<Item> itemCounts = new Object2IntOpenHashMap<>();
+        Map<Item, ItemResource> firstResourceForItem = new HashMap<>();
+        int size = handler.getSlots();
+        for (int slot = 0; slot < size; slot++) {
+            ItemResource resource = handler.getResource(slot);
+            if (resource.isEmpty())
+                continue;
 
-                //first we force a simulation to check if the stack fits
-                ItemStack stack = this.itemStackHandler.extractItem(slot, 1, true);
-                if (stack.isEmpty()) {
-                    continue;
-                }
+            int amount = handler.get(resource);
+            if (amount <= 0 || !comparator.test(resource.toStack()))
+                continue;
 
-                if (currentComparator.test(stack)) {
-                    //now we do the actual operation (note: can still be a simulation, if caller wants to simulate=
-                    return this.itemStackHandler.extractItem(slot, 1, simulate);
-                }
+            itemCounts.addTo(resource.getItem(), amount);
+            firstResourceForItem.putIfAbsent(resource.getItem(), resource);
+        }
 
-                //this slot does not match so we move on in the loop.
+        //take one of the most common item
+        Item mostCommonItem = null;
+        int mostCommonCount = 0;
+        for (var entry : itemCounts.object2IntEntrySet()) {
+            if (entry.getIntValue() > mostCommonCount) {
+                mostCommonItem = entry.getKey();
+                mostCommonCount = entry.getIntValue();
             }
         }
 
-        //nothing found
-        return ItemStack.EMPTY;
+        if (mostCommonItem == null) {
+            //nothing found
+            return ItemStack.EMPTY;
+        }
+
+        //now we do the actual operation (note: can still be a simulation, if caller wants to simulate)
+        return handler.extractItem(firstResourceForItem.get(mostCommonItem), 1, simulate);
     }
 
     @Override
@@ -473,52 +474,22 @@ public class StorageControllerBlockEntity extends NetworkedBlockEntity implement
             return this.itemStackHandler.extractItem(itemStackComparator.getFilterStack(), requestedSize, simulate);
         }
 
-        ItemStack firstMatchedStack = ItemStack.EMPTY;
-        int remaining = requestedSize;
-        for (int slot = 0; slot < this.itemStackHandler.getSlots(); slot++) {
-
-            //first we force a simulation
-            ItemStack stack = this.itemStackHandler.extractItem(slot, remaining, true);
-            if (stack.isEmpty()) {
+        //each resource (item + components) occupies exactly one slot, so we find the first matching resource
+        //by testing the comparator against the stored resources (no simulated extraction per slot) and extract from it.
+        var handler = this.itemStackHandler;
+        int size = handler.getSlots();
+        for (int slot = 0; slot < size; slot++) {
+            ItemResource resource = handler.getResource(slot);
+            if (resource.isEmpty() || handler.get(resource) <= 0)
                 continue;
-            }
 
-            //if we have not found anything yet we can just store the result or move on
-            if (firstMatchedStack.isEmpty()) {
-
-                if (!comparator.test(stack)) {
-                    //this slot does not match so we move on
-                    continue;
-                }
-                //just take entire stack -> we're in sim mode
-                firstMatchedStack = stack.copy();
-            } else {
-                //we already found something, so we need to make sure the stacks match up, if not we move on.
-                if (!ItemStack.isSameItemSameComponents(firstMatchedStack, stack)) {
-                    continue;
-                }
-            }
-
-            //get how many we have to extract in this round, cannot be more than we need nor more than is in this slot.
-            int toExtract = Math.min(stack.getCount(), remaining);
-
-            //now we can leave simulation up to the caller
-            ItemStack extractedStack = this.itemStackHandler.extractItem(slot, toExtract, simulate);
-            remaining -= extractedStack.getCount();
-
-            //if we got all we need we can exit here.
-            if (remaining <= 0) {
-                break;
+            if (comparator.test(resource.toStack())) {
+                //now we can leave simulation up to the caller
+                return handler.extractItem(resource, requestedSize, simulate);
             }
         }
 
-        //set the exact output count and return.
-        int extractCount = requestedSize - remaining;
-        if (!firstMatchedStack.isEmpty() && extractCount > 0) {
-            firstMatchedStack.setCount(extractCount);
-        }
-
-        return firstMatchedStack;
+        return ItemStack.EMPTY;
     }
 
     public int getAvailableAmount(IItemStackComparator comparator) {
