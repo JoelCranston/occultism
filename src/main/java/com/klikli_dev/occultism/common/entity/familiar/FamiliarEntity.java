@@ -98,6 +98,7 @@ public abstract class FamiliarEntity extends PathfinderMob implements IFamiliar 
 
     private boolean partying;
     private BlockPos jukeboxPos;
+    private LivingEntity cachedOwner;
 
     public FamiliarEntity(EntityType<? extends FamiliarEntity> type, Level level) {
         super(type, level);
@@ -286,7 +287,17 @@ public abstract class FamiliarEntity extends PathfinderMob implements IFamiliar 
 
     public LivingEntity getOwner() {
         UUID uuid = this.getOwnerId();
-        return uuid == null ? null : this.level().getPlayerByUUID(uuid);
+        if (uuid == null)
+            return null;
+
+        //the owner is queried very often, so avoid looking it up every time
+        LivingEntity owner = this.cachedOwner;
+        if (owner != null && !owner.isRemoved() && owner.level() == this.level() && uuid.equals(owner.getUUID()))
+            return owner;
+
+        owner = this.level().getPlayerByUUID(uuid);
+        this.cachedOwner = owner;
+        return owner;
     }
 
     @Override
