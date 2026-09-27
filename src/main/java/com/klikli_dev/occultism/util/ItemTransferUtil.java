@@ -38,7 +38,8 @@ public final class ItemTransferUtil {
             return stack;
         }
 
-        try (var tx = transaction == null ? Transaction.openRoot() : transaction) {
+        //never close the caller's transaction: open a nested one instead, which on commit applies to the outer transaction
+        try (var tx = transaction == null ? Transaction.openRoot() : Transaction.open(transaction)) {
             int inserted = ResourceHandlerUtil.insertStacking(handler, ItemResource.of(stack), stack.getCount(), tx);
             if (!simulate) {
                 tx.commit();
