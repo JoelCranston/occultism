@@ -158,7 +158,7 @@ public class CrystallizerJob extends FilterableProcessingSpiritJob {
                     float outputMultiplier = this.outputMultiplier.get();
                     if (this.currentRecipe.get().value().getIgnoreCrystallizeMultiplier())
                         outputMultiplier = 1;
-                    int a = Math.min(this.operationCount.get(), handHeld.getCount());
+                    int a = Math.min(Math.max(1, this.operationCount.get()), handHeld.getCount());
                     result.setCount((int) (result.getCount() * a * outputMultiplier));
                     ItemStack inputCopy = handHeld.copy();
                     inputCopy.setCount(a);
