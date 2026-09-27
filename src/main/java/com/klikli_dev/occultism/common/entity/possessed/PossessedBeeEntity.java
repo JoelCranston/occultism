@@ -100,9 +100,9 @@ public class PossessedBeeEntity extends Bee implements PossessedMob {
 
             long currentGameTime = level.getGameTime();
 
-            // Reset the counter if the time window has passed
+            // Reset the counter if the time window has passed, or the game time went backwards (e.g. a different world was loaded)
             synchronized (PossessedBeeEntity.class) {
-                if (currentGameTime - lastResetGameTime > TIME_WINDOW_TICKS) {
+                if (currentGameTime < lastResetGameTime || currentGameTime - lastResetGameTime > TIME_WINDOW_TICKS) {
                     beeSpawnCounter.set(0);
                     lastResetGameTime = currentGameTime;
                 }
