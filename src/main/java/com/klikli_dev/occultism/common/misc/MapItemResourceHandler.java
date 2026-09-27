@@ -235,9 +235,19 @@ public class MapItemResourceHandler extends SnapshotJournal<Snapshot> implements
         });
 
         this.emptySlots = new IntArrayList(Arrays.stream(nbt.getIntArray("emptySlots").orElse(new int[0])).toArray());
-        this.nextSlotIndex = nbt.getIntOr("nextSlot", 0);
+        //make sure no loaded slot is beyond the next slot index, otherwise it would be hidden and could be overwritten
+        int nextSlotIndex = nbt.getIntOr("nextSlot", 0);
+        for (int slot : this.slotToResource.keySet()) {
+            nextSlotIndex = Math.max(nextSlotIndex, slot + 1);
+        }
+        this.nextSlotIndex = nextSlotIndex;
         this.maxItemTypes = nbt.getIntOr("maxSlots", -1);
-        this.totalItemCount = nbt.getLongOr("totalItemCount", 0L);
+        //recompute the total from the loaded entries, entries that failed to load (e.g. removed items) are no longer counted.
+        long totalItemCount = 0;
+        for (int count : this.resourceToCountMap.values()) {
+            totalItemCount += count;
+        }
+        this.totalItemCount = totalItemCount;
         this.maxTotalItemCount = nbt.getLongOr("maxTotalItemCount", -1L);
         this.undoLog.clear();
         this.itemToVariantsCache.clear();
@@ -245,11 +255,9 @@ public class MapItemResourceHandler extends SnapshotJournal<Snapshot> implements
 
     @Override
     public int size() {
-        if (!this.hasMaxItemTypes()) {
-            return this.nextSlotIndex + 1;
-        }
-
-        return Math.min(this.maxItemTypes, this.nextSlotIndex + 1);
+        //Note: we do not limit this to maxItemTypes, otherwise items in slots beyond the limit (e.g. after removing a stabilizer) become invisible.
+        //      the item type limit is enforced on insert instead, see insertInternal.
+        return this.nextSlotIndex + 1;
     }
 
     @Override
@@ -310,7 +318,9 @@ public class MapItemResourceHandler extends SnapshotJournal<Snapshot> implements
         }
 
         if (this.maxTotalItemCount != -1) {
-            limit = Math.min(limit, Math.toIntExact(this.maxTotalItemCount - this.totalItemCount));
+            //clamp to int range, the remaining capacity can exceed Integer.MAX_VALUE (or be negative if the limit was lowered)
+            long remainingCapacity = Math.max(0L, this.maxTotalItemCount - this.totalItemCount);
+            limit = (int) Math.min(limit, Math.min(remainingCapacity, Integer.MAX_VALUE));
         }
 
         if (limit <= 0) {
@@ -582,8 +592,8 @@ public class MapItemResourceHandler extends SnapshotJournal<Snapshot> implements
             throw new RuntimeException("Slot " + slot + " not in valid range - [0," + (this.maxItemTypes != -1 ? this.maxItemTypes : Integer.MAX_VALUE) + ")");
         }
 
-        if (this.hasMaxItemTypes() && slot >= this.maxItemTypes) {
-            throw new RuntimeException("Slot " + slot + " not in valid range - [0," + this.maxItemTypes + ")");
+        if (slot >= this.size()) {
+            throw new RuntimeException("Slot " + slot + " not in valid range - [0," + this.size() + ")");
         }
     }
 
