@@ -22,20 +22,16 @@
 
 package com.klikli_dev.occultism.common.entity.ai.goal;
 
-import com.klikli_dev.occultism.api.common.blockentity.IStorageControllerProxy;
 import com.klikli_dev.occultism.common.entity.ai.BlockSorter;
+import com.klikli_dev.occultism.common.entity.ai.StorageProxySearch;
 import com.klikli_dev.occultism.common.entity.job.ManageMachineJob;
 import com.klikli_dev.occultism.common.entity.spirit.SpiritEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * If there is a handheld item and no deposit location, it will try to deposit in a storage controller.
@@ -80,6 +76,7 @@ public class FallbackDepositToControllerGoal extends PausableGoal {
         if (storageProxy != null) {
             this.entity.setDepositPosition(storageProxy.getBlockPos());
             this.entity.setDepositFacing(Direction.UP);
+            this.retries = 0;
         } else {
             //keep track of retries to wait increasing amounts of time up to 5 min
             if (this.retries <= 60)
@@ -92,9 +89,6 @@ public class FallbackDepositToControllerGoal extends PausableGoal {
     }
 
     protected BlockEntity findClosestStorageProxy() {
-        Level level = this.entity.level();
-        List<BlockPos> allBlocks = new ArrayList<>();
-
         if (this.job.getManagedMachine() == null || this.job.getManagedMachine().insertGlobalPos == null)
             return null;
 
@@ -102,26 +96,8 @@ public class FallbackDepositToControllerGoal extends PausableGoal {
 
         //get work area, but only half height, we don't need full.
         int workAreaSize = this.entity.getWorkAreaSize().getValue();
-        List<BlockPos> searchBlocks = BlockPos.betweenClosedStream(
-                        machinePosition.offset(-workAreaSize, -workAreaSize / 2, -workAreaSize),
-                        machinePosition.offset(workAreaSize, workAreaSize / 2, workAreaSize)).map(BlockPos::immutable)
-                .collect(Collectors.toList());
-
-        for (BlockPos pos : searchBlocks) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof IStorageControllerProxy proxy) {
-                if (proxy.getLinkedStorageControllerPosition() != null &&
-                        proxy.getLinkedStorageControllerPosition().equals(this.job.getStorageControllerPosition()))
-                    allBlocks.add(pos);
-            }
-        }
-
-        //set closest log as target
-        if (!allBlocks.isEmpty()) {
-            allBlocks.sort(this.targetSorter);
-            return level.getBlockEntity(allBlocks.get(0));
-        }
-        return null;
+        return StorageProxySearch.findClosestLinkedProxy(this.entity.level(), machinePosition,
+                workAreaSize, workAreaSize / 2, this.job.getStorageControllerPosition(), this.targetSorter);
     }
 
 }
