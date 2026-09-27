@@ -37,15 +37,15 @@ public class GoldenSacrificialBowlHUD implements GuiLayer {
             return;
         }
 
-        ClientPentacleManager.rebuild(pos);
         if (JadeIntegration.displayPentacles() && mc.level.getBlockEntity(pos) instanceof GoldenSacrificialBowlBlockEntity bowl) {
             Font font = mc.font;
 
             int x = pGuiGraphics.guiWidth() / 2;
             int y = pGuiGraphics.guiHeight() / 2 + 9;
 
-            if (bowl.ritualActive) {
-                String ritualName = bowl.getCurrentRitualRecipe().value().getRitualDummy().getHoverName().getString();
+            var recipe = bowl.getCurrentRitualRecipe();
+            if (bowl.ritualActive && recipe != null) {
+                String ritualName = recipe.value().getRitualDummy().getHoverName().getString();
 
                 int i = Math.max(ritualName.indexOf(":"), ritualName.indexOf("："));
                 pGuiGraphics.centeredText(font, Component.translatable("occultism.jade.current_ritual",
@@ -55,11 +55,11 @@ public class GoldenSacrificialBowlHUD implements GuiLayer {
                 if (!bowl.sacrificeFulfilled()) {
                     pGuiGraphics.centeredText(font, Component.translatable("occultism.jade.no_sacrifice"), x, y, 0xFF000000 + ChatFormatting.RED.getColor());
                     y += 9;
-                    pGuiGraphics.centeredText(font, Component.translatable(bowl.currentRitualRecipe.value().getEntityToSacrificeDisplayName()), x, y, -1);
+                    pGuiGraphics.centeredText(font, Component.translatable(recipe.value().getEntityToSacrificeDisplayName()), x, y, -1);
                 }
                 if (!bowl.itemUseFulfilled()) {
                     pGuiGraphics.centeredText(font, Component.translatable("occultism.jade.no_item_use"), x, y, 0xFF000000 + ChatFormatting.RED.getColor());
-                    var itemToUse = bowl.currentRitualRecipe.value().getItemToUse();
+                    var itemToUse = recipe.value().getItemToUse();
                     ItemStack[] stacks = itemToUse != null ? itemToUse.items().map(holder -> new ItemStack(holder.value())).toArray(ItemStack[]::new) : new ItemStack[0];
                     if (stacks.length > 0) {
                         y += 9;
@@ -68,6 +68,8 @@ public class GoldenSacrificialBowlHUD implements GuiLayer {
                     }
                 }
             } else {
+                //only validate pentacles when we actually display them
+                ClientPentacleManager.rebuild(pos);
                 if (!ClientPentacleManager.lastPentacles.isEmpty()) {
                     pGuiGraphics.centeredText(font, Component.translatable(TranslationKeys.HUD_PENTACLE_FOUND), x, y,  0xFF000000 + ChatFormatting.GOLD.getColor());
                     y += 9;

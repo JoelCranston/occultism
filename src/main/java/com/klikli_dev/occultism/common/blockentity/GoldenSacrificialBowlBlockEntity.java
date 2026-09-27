@@ -848,11 +848,15 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
             //this sets the signal that loading didn't go right -> will reattempt during tick()
             this.remainingAdditionalIngredients = null;
         } else {
-            if (this.consumedIngredients.size() > 0) {
+            var recipe = this.getCurrentRitualRecipe();
+            if (recipe == null) {
+                //recipe no longer exists (e.g. removed by datapack), nothing to restore
+                this.remainingAdditionalIngredients = new ArrayList<>();
+            } else if (this.consumedIngredients.size() > 0) {
                 this.remainingAdditionalIngredients = Ritual.getRemainingAdditionalIngredients(
-                        this.getCurrentRitualRecipe().value().getIngredients(), this.consumedIngredients);
+                        recipe.value().getIngredients(), this.consumedIngredients);
             } else {
-                this.remainingAdditionalIngredients = new ArrayList<>(this.getCurrentRitualRecipe().value().getIngredients());
+                this.remainingAdditionalIngredients = new ArrayList<>(recipe.value().getIngredients());
             }
         }
 
@@ -904,9 +908,11 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
     @Override
     public void loadNetwork(ValueInput input) {
         super.loadNetwork(input);
-        input.getString("currentRitual").ifPresent(s -> this.currentRitualRecipeId = Identifier.parse(s));
+        //clear the old state if the ritual was stopped, the recipe will be resolved lazily from the id
+        this.currentRitualRecipe = null;
+        this.currentRitualRecipeId = input.getString("currentRitual").map(Identifier::parse).orElse(null);
 
-        input.read("castingPlayerId", UUIDUtil.CODEC).ifPresent(uuid -> this.castingPlayerId = uuid);
+        this.castingPlayerId = input.read("castingPlayerId", UUIDUtil.CODEC).orElse(null);
 
         this.currentTime = input.getIntOr("currentTime", 0);
         this.ritualActive = input.getBooleanOr("ritualActive", false);
