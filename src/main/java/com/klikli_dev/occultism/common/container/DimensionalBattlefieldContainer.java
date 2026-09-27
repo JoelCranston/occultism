@@ -68,6 +68,11 @@ public class DimensionalBattlefieldContainer extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
+        //prevent access to the inventory of a removed block entity
+        if (this.otherworldButcher.isRemoved() ||
+                player.level().getBlockEntity(this.otherworldButcher.getBlockPos()) != this.otherworldButcher)
+            return false;
+
         return player.distanceToSqr(this.otherworldButcher.getBlockPos().getX() + 0.5D,
                 this.otherworldButcher.getBlockPos().getY() + 0.5D,
                 this.otherworldButcher.getBlockPos().getZ() + 0.5D) <= 64.0D;
@@ -81,8 +86,8 @@ public class DimensionalBattlefieldContainer extends AbstractContainerMenu {
             ItemStack itemstack1 = slot.getItem();
             itemstack = itemstack1.copy();
             if (index < this.outputHandler.size()) {
-                //+1 because we have the input handler slot after the output hander slots
-                if (!this.moveItemStackTo(itemstack1, this.outputHandler.size() + 1, this.slots.size(), true)) {
+                //+3 because we have the three input handler slots after the output hander slots
+                if (!this.moveItemStackTo(itemstack1, this.outputHandler.size() + 3, this.slots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
             }
@@ -205,8 +210,14 @@ public class DimensionalBattlefieldContainer extends AbstractContainerMenu {
         }
 
         public boolean mayPlace(ItemStack stack) {
-            this.arena.mobHealth = this.arena.maxMobLife;
             return stack.is(Tags.Items.TOOLS);
+        }
+
+        @Override
+        public void setChanged() {
+            //restart the fight if the weapon changes
+            this.arena.mobHealth = this.arena.maxMobLife;
+            super.setChanged();
         }
     }
 
@@ -219,8 +230,14 @@ public class DimensionalBattlefieldContainer extends AbstractContainerMenu {
         }
 
         public boolean mayPlace(ItemStack stack) {
-            this.arena.mobHealth = this.arena.maxMobLife;
             return stack.has(DataComponents.ENTITY_DATA);
+        }
+
+        @Override
+        public void setChanged() {
+            //restart the fight if the soul changes
+            this.arena.mobHealth = this.arena.maxMobLife;
+            super.setChanged();
         }
     }
 
