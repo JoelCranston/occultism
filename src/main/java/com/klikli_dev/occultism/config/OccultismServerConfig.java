@@ -338,7 +338,7 @@ public class OccultismServerConfig {
                     .defineInRange("blacksmithFamiliarUpgradeCooldown", 20 * 20, 0, Integer.MAX_VALUE);
             this.blacksmithFamiliarPassiveRepairDelay = builder.comment(
                             "The cooldown for an upgraded blacksmith familiar to passively repair equipment in the owner's inventory.")
-                    .defineInRange("blacksmithFamiliarPassiveRepairDelay", 128, 0, Integer.MAX_VALUE);
+                    .defineInRange("blacksmithFamiliarPassiveRepairDelay", 128, 1, Integer.MAX_VALUE);
 
 
             this.greedySearchRange = builder.comment(
