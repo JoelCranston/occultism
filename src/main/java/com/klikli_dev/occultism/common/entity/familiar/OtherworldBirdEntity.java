@@ -149,7 +149,8 @@ public abstract class OtherworldBirdEntity extends Parrot implements IFamiliar {
 
     @Override
     public @NonNull InteractionResult mobInteract(Player playerIn, @NonNull InteractionHand hand) {
-        if (this.getOwner() == null)
+        //only claim birds without owner, an offline owner still owns the bird
+        if (!this.hasFamiliarOwner())
             this.setFamiliarOwner(playerIn);
 
         ItemStack stack = playerIn.getItemInHand(hand);
@@ -204,6 +205,12 @@ public abstract class OtherworldBirdEntity extends Parrot implements IFamiliar {
     @Override
     public LivingEntity getFamiliarOwner() {
         return this.getOwner();
+    }
+
+    @Override
+    public boolean hasFamiliarOwner() {
+        //birds get tamed when their owner is set
+        return this.isTame();
     }
 
     @Override
