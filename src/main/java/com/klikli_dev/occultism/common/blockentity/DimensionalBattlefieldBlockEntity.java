@@ -42,7 +42,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ProblemReporter;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.Clearable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
@@ -67,7 +66,6 @@ import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.capabilities.Capabilities.Item;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.Tags;
@@ -89,11 +87,15 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity implements MenuProvider, Clearable {
 
     private static final int DEFAULT_MAX_LUCK = 16;
+    /**
+     * The battlefield currently collecting drops during defeat(), or null. Only accessed from the server thread.
+     */
+    private static DimensionalBattlefieldBlockEntity collectingBattlefield;
+    private static boolean entityJoinLevelListenerRegistered;
     private static final ResourceKey<Enchantment> EVILCRAFT_UNUSING_ENCHANTMENT = ResourceKey.create(
             Registries.ENCHANTMENT, Identifier.parse("evilcraft:unusing"));
     private final float BUTCHER_HURT_CHANCE = (float) Occultism.SERVER_CONFIG.itemSettings.butcherHurtChance.getAsDouble();
@@ -104,7 +106,6 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
     public int hitTimer;
     public int maxHitTimer;
     public int soulValue;
-    public Consumer<EntityJoinLevelEvent> entityJoinLevelEventListener;
     // Internal handlers (mirrored behavior)
     //public BattlefieldInventory inputHandler = new BattlefieldInventory(3, true);
     public BattlefieldInventory outputHandler = new BattlefieldInventory(25, false);
@@ -165,7 +166,16 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
 
     public DimensionalBattlefieldBlockEntity(BlockPos worldPos, BlockState state) {
         super(OccultismBlockEntities.DIMENSIONAL_BATTLEFIELD.get(), worldPos, state);
-        this.entityJoinLevelEventListener = this::itemEntityConsumer;
+    }
+
+    /**
+     * Global listener that forwards entities spawned while a battlefield collects drops to that battlefield.
+     * Registered once instead of per defeat to avoid adding and removing listeners on the event bus constantly.
+     */
+    private static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        var battlefield = collectingBattlefield;
+        if (battlefield != null && event.getLevel() == battlefield.level)
+            battlefield.itemEntityConsumer(event);
     }
 
     private static ItemStack getStack(ResourceHandler<ItemResource> handler, int slot) {
@@ -190,6 +200,7 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
         this.inputWeaponHandler.deserialize(input.childOrEmpty("inputWeaponHandler"));
         this.inputFuelHandler.deserialize(input.childOrEmpty("inputFuelHandler"));
         this.outputHandler.deserialize(input.childOrEmpty("outputHandler"));
+        this.xpStored = input.getIntOr("xpStored", 0);
     }
 
     @Override
@@ -198,6 +209,7 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
         this.inputWeaponHandler.serialize(output.child("inputWeaponHandler"));
         this.inputFuelHandler.serialize(output.child("inputFuelHandler"));
         this.outputHandler.serialize(output.child("outputHandler"));
+        output.putInt("xpStored", this.xpStored);
         super.saveAdditional(output);
     }
 
@@ -344,7 +356,7 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
         luck = Math.min(luck, DEFAULT_MAX_LUCK); //Cap luck
         luck = Math.max(luck, 1); //Always positive
         rolls = rolls + (int) (luck * luck / 100F);
-        if (RandomSource.create().nextIntBetweenInclusive(0, 99) < (luck * luck) % 100)
+        if (serverLevel.getRandom().nextIntBetweenInclusive(0, 99) < (luck * luck) % 100)
             rolls++;
 
         if (serverLevel.getRandom().nextFloat() < soul.getOrDefault(OccultismDataComponents.CONSUME_CHANCE, 0F) / luck) {
@@ -358,7 +370,12 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
         LootParams lootparams = this.setLootParams(entity, luck, serverLevel);
 
         if (this.storedLootTable != null) {
-            NeoForge.EVENT_BUS.addListener(this.entityJoinLevelEventListener);
+            if (!entityJoinLevelListenerRegistered) {
+                NeoForge.EVENT_BUS.addListener(DimensionalBattlefieldBlockEntity::onEntityJoinLevel);
+                entityJoinLevelListenerRegistered = true;
+            }
+            var previousCollectingBattlefield = collectingBattlefield;
+            collectingBattlefield = this;
             try {
                 for (int i = 0; i < rolls; i++) {
                     Collection<ItemEntity> dropsCollection = new ArrayList<>();
@@ -375,7 +392,7 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
                                 ItemTransferUtil.insertItemStacked(currentHandler, item.getItem(), false);
                 }
             } finally {
-                NeoForge.EVENT_BUS.unregister(this.entityJoinLevelEventListener);
+                collectingBattlefield = previousCollectingBattlefield;
             }
         }
 
@@ -518,10 +535,9 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
         this.hitTimer = hitSpeed;
     }
 
-    @SubscribeEvent
     public void itemEntityConsumer(EntityJoinLevelEvent event) {
         Level level = event.getLevel();
-        if (level.isClientSide())
+        if (level.isClientSide() || level != this.level)
             return;
 
         Entity entity = event.getEntity();
