@@ -61,6 +61,8 @@ public class FamiliarTabletScreen extends Screen implements GuiHost, LayoutScree
     private BookOfCallingSelectionWidget<Holder<MobEffect>> effectSelectionWidget;
     private Checkbox checkbox;
     private FamiliarEffectSlider slider;
+    private EntityType<?> previewEntityType;
+    private LivingEntity previewEntity;
 
     public FamiliarTabletScreen(Player player) {
         super(Component.translatable(GUI_PREFIX));
@@ -129,7 +131,7 @@ public class FamiliarTabletScreen extends Screen implements GuiHost, LayoutScree
                 ctx.node().y() - this.topPos(),
                 ctx.node().widthOrThrow(),
                 ctx.node().heightOrThrow(),
-                () -> this.selectedFamiliar == null ? null : (LivingEntity) this.selectedFamiliar.create(this.level, EntitySpawnReason.LOAD),
+                this::getPreviewEntity,
                 this.entityPreviewMouseOffsetX(),
                 this.entityPreviewMouseOffsetY()
         )));
@@ -247,6 +249,32 @@ public class FamiliarTabletScreen extends Screen implements GuiHost, LayoutScree
         }
 
         super.onClose();
+    }
+
+    @Override
+    public void removed() {
+        super.removed();
+        this.clearPreviewEntity();
+    }
+
+    /**
+     * Gets the entity to display in the preview, only creating a new one when the selected familiar changes.
+     */
+    private LivingEntity getPreviewEntity() {
+        if (this.selectedFamiliar == null) {
+            return null;
+        }
+
+        if (this.previewEntityType != this.selectedFamiliar) {
+            this.previewEntityType = this.selectedFamiliar;
+            this.previewEntity = (LivingEntity) this.selectedFamiliar.create(this.level, EntitySpawnReason.LOAD);
+        }
+        return this.previewEntity;
+    }
+
+    private void clearPreviewEntity() {
+        this.previewEntityType = null;
+        this.previewEntity = null;
     }
 
     protected float entityPreviewMouseOffsetX() {
