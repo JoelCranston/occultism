@@ -22,13 +22,12 @@
 
 package com.klikli_dev.occultism.util;
 
-import com.google.common.base.Preconditions;
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
 import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
 import com.klikli_dev.occultism.network.Networking;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.recipebook.PlaceRecipeHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.Clearable;
@@ -38,9 +37,10 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -51,7 +51,9 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOCase;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
@@ -324,39 +326,31 @@ public class StorageUtil {
     }
 
     /**
-     * Ensures that a recipe's ingredients are mapped to a 3x3 crafting matrix.
-     * Shaped recipes smaller than 3x3 are expanded to fill the correct positions.
-     * Originally from EmiHelper, moved here to avoid integration dependency.
+     * Maps a crafting recipe's ingredients to a 3x3 crafting matrix.
+     * Shaped recipes smaller than 3x3 are placed at the correct positions, based on the recipe placement info.
+     *
+     * @return a list of 9 entries, empty optionals mark slots that need no ingredient.
      */
-    public static NonNullList<Ingredient> ensure3by3CraftingMatrix(Recipe<?> recipe) {
-        // For 26.1, get ingredients from display() API
-        // RecipeDisplay API doesn't expose ingredients directly in 26.1
-        // Return empty list for now
-        List<Ingredient> ingredients = new ArrayList<>();
-
-        var expandedIngredients = NonNullList.withSize(9, Ingredient.of());
-
-        Preconditions.checkArgument(ingredients.size() <= 9);
-
-        if (recipe instanceof ShapedRecipe shapedRecipe) {
-            var width = shapedRecipe.getWidth();
-            var height = shapedRecipe.getHeight();
-            Preconditions.checkArgument(width <= 3 && height <= 3);
-
-            for (var h = 0; h < height; h++) {
-                for (var w = 0; w < width; w++) {
-                    var source = w + h * width;
-                    var target = w + h * 3;
-                    var i = ingredients.get(source);
-                    expandedIngredients.set(target, i);
-                }
-            }
-        } else {
-            for (var i = 0; i < ingredients.size(); i++) {
-                expandedIngredients.set(i, ingredients.get(i));
-            }
+    public static List<Optional<Ingredient>> ensure3by3CraftingMatrix(Recipe<?> recipe) {
+        List<Optional<Ingredient>> ingredientsMatrixGrid = new ArrayList<>(Collections.nCopies(9, Optional.empty()));
+        if (!(recipe instanceof CraftingRecipe craftingRecipe)) {
+            return ingredientsMatrixGrid;
         }
 
-        return expandedIngredients;
+        PlacementInfo placementInfo = craftingRecipe.placementInfo();
+        if (placementInfo.isImpossibleToPlace()) {
+            return ingredientsMatrixGrid;
+        }
+
+        var ingredients = placementInfo.ingredients();
+        PlaceRecipeHelper.placeRecipe(3, 3, craftingRecipe, placementInfo.slotsToIngredientIndex(),
+                (ingredientIndex, slot, gridXPos, gridYPos) -> {
+                    if (slot >= 0 && slot < ingredientsMatrixGrid.size()
+                            && ingredientIndex >= 0 && ingredientIndex < ingredients.size()) {
+                        ingredientsMatrixGrid.set(slot, Optional.of(ingredients.get(ingredientIndex)));
+                    }
+                });
+
+        return ingredientsMatrixGrid;
     }
 }
