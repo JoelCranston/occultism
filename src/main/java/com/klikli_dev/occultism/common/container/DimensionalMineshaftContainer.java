@@ -29,6 +29,7 @@ import com.klikli_dev.occultism.util.RecipeUtil;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
@@ -52,6 +53,7 @@ public class DimensionalMineshaftContainer extends AbstractContainerMenu {
         this.setupMinerInventory();
         this.setupPlayerInventorySlots(playerInventory.player);
         this.setupPlayerHotbar(playerInventory.player);
+        this.setupDataSlots();
     }
 
     @Override
@@ -110,6 +112,61 @@ public class DimensionalMineshaftContainer extends AbstractContainerMenu {
         int hotbarLeft = 8;
         for (int i = 0; i < 9; i++)
             this.addSlot(new Slot(player.getInventory(), i, hotbarLeft + i * 18, hotbarTop));
+    }
+
+    /**
+     * Syncs the mining progress to the client block entity while the menu is open.
+     * Data slots are only synced as shorts, so each int is split into its lower and upper 16 bits.
+     */
+    protected void setupDataSlots() {
+        this.addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return DimensionalMineshaftContainer.this.otherworldMiner.miningTime & 0xFFFF;
+            }
+
+            @Override
+            public void set(int value) {
+                var miner = DimensionalMineshaftContainer.this.otherworldMiner;
+                miner.miningTime = (miner.miningTime & 0xFFFF0000) | (value & 0xFFFF);
+            }
+        });
+        this.addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return (DimensionalMineshaftContainer.this.otherworldMiner.miningTime >>> 16) & 0xFFFF;
+            }
+
+            @Override
+            public void set(int value) {
+                var miner = DimensionalMineshaftContainer.this.otherworldMiner;
+                miner.miningTime = (miner.miningTime & 0xFFFF) | ((value & 0xFFFF) << 16);
+            }
+        });
+        this.addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return DimensionalMineshaftContainer.this.otherworldMiner.maxMiningTime & 0xFFFF;
+            }
+
+            @Override
+            public void set(int value) {
+                var miner = DimensionalMineshaftContainer.this.otherworldMiner;
+                miner.maxMiningTime = (miner.maxMiningTime & 0xFFFF0000) | (value & 0xFFFF);
+            }
+        });
+        this.addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return (DimensionalMineshaftContainer.this.otherworldMiner.maxMiningTime >>> 16) & 0xFFFF;
+            }
+
+            @Override
+            public void set(int value) {
+                var miner = DimensionalMineshaftContainer.this.otherworldMiner;
+                miner.maxMiningTime = (miner.maxMiningTime & 0xFFFF) | ((value & 0xFFFF) << 16);
+            }
+        });
     }
 
     protected void setupMinerInventory() {
