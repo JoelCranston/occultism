@@ -43,6 +43,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.common.util.ValueIOSerializable;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,11 @@ public class FamiliarSettingsData  implements ValueIOSerializable {
 
     public FamiliarSettingsData() {
         this.familiarEnabled = new HashMap<>();
+        this.resetToDefaults();
+    }
+
+    private void resetToDefaults() {
+        this.familiarEnabled.clear();
         for (EntityType<?> familiar : getFamiliars()) {
             ImmutableList<FamiliarEffects.FamiliarEffectDefinition> effects = FamiliarEffects.effectMap().get(familiar);
             Map<Holder<MobEffect>, Byte> map;
@@ -66,7 +72,7 @@ public class FamiliarSettingsData  implements ValueIOSerializable {
                     map.put(e.effect(), e.iesniumValue());
                 }
             } else {
-                map = Map.of();
+                map = new HashMap<>();
             }
             this.familiarEnabled.put(familiar, new FamiliarEffectSettings(true, map));
         }
@@ -113,24 +119,34 @@ public class FamiliarSettingsData  implements ValueIOSerializable {
 
     public void setFamiliarEnabled(EntityType<?> familiar, boolean b) {
         FamiliarEffectSettings settings = this.familiarEnabled.get(familiar);
+        //ignore unknown familiar types
+        if (settings == null)
+            return;
         settings.setEnabled(b);
-        this.familiarEnabled.put(familiar, settings);
     }
 
     public boolean isFamiliarEnabled(EntityType<?> familiar) {
-        return familiar != null && this.familiarEnabled.get(familiar).isEnabled();
+        FamiliarEffectSettings settings = familiar == null ? null : this.familiarEnabled.get(familiar);
+        return settings != null && settings.isEnabled();
     }
 
     public void setEffectAmplifier(EntityType<?> familiar, Holder<MobEffect> effectHolder, byte power) {
         FamiliarEffectSettings settings = this.familiarEnabled.get(familiar);
-        settings.setEffectsAmplifier(effectHolder, power);
-        this.familiarEnabled.put(familiar, settings);
+        //ignore unknown familiar types and effects the familiar does not have
+        Holder<MobEffect> effect = settings == null ? null : settings.findEffect(effectHolder);
+        if (effect == null)
+            return;
+        settings.setEffectsAmplifier(effect, power);
     }
 
     public int getEffectAmplifier(EntityType<?> familiar, Holder<MobEffect> effectHolder) {
         if (familiar == null || effectHolder == null)
             return -1;
-        return this.familiarEnabled.get(familiar).getEffectsLevelMap().get(effectHolder);
+        FamiliarEffectSettings settings = this.familiarEnabled.get(familiar);
+        if (settings == null)
+            return -1;
+        Holder<MobEffect> effect = settings.findEffect(effectHolder);
+        return effect == null ? -1 : settings.getEffectsLevelMap().get(effect);
     }
 
     public void sync(ServerPlayer player) {
@@ -168,18 +184,20 @@ public class FamiliarSettingsData  implements ValueIOSerializable {
     }
 
     public void deserializeNBT(Provider provider, CompoundTag tag) {
-        this.familiarEnabled.clear();
+        //start from the defaults and only overwrite what is present, so missing entries do not cause NPEs later
+        this.resetToDefaults();
 
         for (String entityKey : tag.keySet()) {
             Identifier entityId = Identifier.parse(entityKey);
 
-            EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);
+            EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(entityId).orElse(null);
+            FamiliarEffectSettings settings = entityType == null ? null : this.familiarEnabled.get(entityType);
+            if (settings == null)
+                continue;
 
             CompoundTag familiarTag = tag.getCompoundOrEmpty(entityKey);
 
-            boolean enabled = familiarTag.getBooleanOr("enabled", true);
-
-            Map<Holder<MobEffect>, Byte> effects = new HashMap<>();
+            settings.setEnabled(familiarTag.getBooleanOr("enabled", true));
 
             CompoundTag effectsTag = familiarTag.getCompoundOrEmpty("effects");
 
@@ -189,11 +207,10 @@ public class FamiliarSettingsData  implements ValueIOSerializable {
                 Optional<Holder.Reference<MobEffect>> holder =
                         BuiltInRegistries.MOB_EFFECT.get(ResourceKey.create(Registries.MOB_EFFECT, effectId));
 
-                holder.ifPresent(effect ->
-                        effects.put(effect, effectsTag.getByteOr(effectKey, (byte) 0)));
+                Holder<MobEffect> effect = holder.map(settings::findEffect).orElse(null);
+                if (effect != null)
+                    settings.setEffectsAmplifier(effect, effectsTag.getByteOr(effectKey, (byte) 0));
             }
-
-            this.familiarEnabled.put(entityType, new FamiliarEffectSettings(enabled, effects));
         }
     }
 
@@ -218,7 +235,8 @@ public class FamiliarSettingsData  implements ValueIOSerializable {
 
     @Override
     public void deserialize(ValueInput input) {
-        this.familiarEnabled.clear();
+        //start from the defaults, so familiars missing in the saved data keep their default settings
+        this.resetToDefaults();
 
         for (EntityType<?> familiar : getFamiliars()) {
             Identifier entityId = BuiltInRegistries.ENTITY_TYPE.getKey(familiar);
@@ -284,6 +302,29 @@ public class FamiliarSettingsData  implements ValueIOSerializable {
 
         public Map<Holder<MobEffect>, Byte> getEffectsLevelMap() {
             return this.effectsLevelMap;
+        }
+
+        /**
+         * Finds the holder used as key in the effects map for the given effect.
+         * Compares by registry key, because deferred holders and registry holders of the same effect are not equal.
+         *
+         * @param effectHolder the effect to look for.
+         * @return the matching key of the effects map, or null if the familiar does not have this effect.
+         */
+        @Nullable
+        public Holder<MobEffect> findEffect(Holder<MobEffect> effectHolder) {
+            if (this.effectsLevelMap.containsKey(effectHolder))
+                return effectHolder;
+
+            var key = effectHolder.unwrapKey();
+            if (key.isEmpty())
+                return null;
+
+            for (Holder<MobEffect> holder : this.effectsLevelMap.keySet()) {
+                if (key.equals(holder.unwrapKey()))
+                    return holder;
+            }
+            return null;
         }
     }
 }

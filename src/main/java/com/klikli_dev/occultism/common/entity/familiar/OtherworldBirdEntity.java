@@ -223,7 +223,7 @@ public abstract class OtherworldBirdEntity extends Parrot implements IFamiliar {
         if (this.effectDefinitionList == null || this.effectDefinitionList.isEmpty() || this.getOwner() == null)
             return List.of();
 
-        FamiliarSettingsData data = this.getOwner().getExistingDataOrNull(OccultismDataStorage.FAMILIAR_SETTINGS.get());
+        FamiliarSettingsData data = this.getOwner().getData(OccultismDataStorage.FAMILIAR_SETTINGS.get());
         List<MobEffectInstance> effects = new ArrayList<>(this.effectDefinitionList.size());
         for (var effect : this.effectDefinitionList) {
             int amp = effect.getValue(this);
