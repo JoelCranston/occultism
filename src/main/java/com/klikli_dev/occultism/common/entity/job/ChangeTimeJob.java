@@ -94,7 +94,8 @@ public abstract class ChangeTimeJob extends SpiritJob {
         if (this.isEnabled())
             this.updateTime();
 
-        if (this.currentChangeTicks == this.requiredChangeTicks.get()) {
+        //>= instead of == so we still finish if the required ticks changed (e.g. config) after we passed them
+        if (this.currentChangeTicks >= this.requiredChangeTicks.get()) {
             this.finishChangeTime();
         }
     }
