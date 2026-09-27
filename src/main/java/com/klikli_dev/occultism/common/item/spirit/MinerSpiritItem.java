@@ -73,16 +73,4 @@ public class MinerSpiritItem extends Item {
     public int getMaxDamage(ItemStack stack) {
         return this.maxDamage.get();
     }
-
-    @Override
-    public int getMaxStackSize(ItemStack stack) {
-        //cannot use verifyTagAfterLoad as config is not available at that time
-        if (!stack.has(OccultismDataComponents.MAX_MINING_TIME))
-            stack.set(OccultismDataComponents.MAX_MINING_TIME, this.maxMiningTime.get());
-        if (!stack.has(OccultismDataComponents.ROLLS_PER_OPERATION))
-            stack.set(OccultismDataComponents.ROLLS_PER_OPERATION, this.rollsPerOperation.get());
-        if (!stack.has(OccultismDataComponents.MINER_OUTPUT_MULTIPLIER))
-            stack.set(OccultismDataComponents.MINER_OUTPUT_MULTIPLIER, this.outputMultiplier.get());
-        return super.getMaxStackSize(stack);
-    }
 }
