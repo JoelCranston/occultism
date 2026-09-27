@@ -25,7 +25,7 @@ package com.klikli_dev.occultism.network.messages;
 
 import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
-import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
+import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
 import com.klikli_dev.occultism.network.IMessage;
 import com.klikli_dev.occultism.network.Networking;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -51,15 +51,13 @@ public class MessageRequestStacks implements IMessage {
 
     @Override
     public void onServerReceived(MinecraftServer minecraftServer, ServerPlayer player) {
-        if (player.containerMenu instanceof IStorageControllerContainer) {
-            IStorageController storageController = ((IStorageControllerContainer) player.containerMenu)
-                    .getStorageController();
-            if (storageController != null) {
-                Networking.sendTo(player, storageController.getMessageUpdateStacks());
-                Networking
-                        .sendTo(player, new MessageUpdateLinkedMachines(storageController.getLinkedMachines()));
-                player.containerMenu.broadcastChanges();
-            }
+        StorageControllerContainerBase container = StorageControllerContainerBase.getValidOpenContainer(player);
+        if (container != null) {
+            IStorageController storageController = container.getStorageController();
+            Networking.sendTo(player, storageController.getMessageUpdateStacks());
+            Networking
+                    .sendTo(player, new MessageUpdateLinkedMachines(storageController.getLinkedMachines()));
+            player.containerMenu.broadcastChanges();
         }
     }
 

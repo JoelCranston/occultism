@@ -25,7 +25,7 @@ package com.klikli_dev.occultism.network.messages;
 
 import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
-import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
+import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
 import com.klikli_dev.occultism.network.IMessage;
 import com.klikli_dev.occultism.network.Networking;
 import com.klikli_dev.occultism.util.StorageUtil;
@@ -77,13 +77,12 @@ public class MessageSetRecipeByTemplate implements IMessage {
 
     @Override
     public void onServerReceived(MinecraftServer minecraftServer, ServerPlayer player) {
-        if (!(player.containerMenu instanceof IStorageControllerContainer container)) {
+        //only act on a storage menu that is still valid, otherwise stale menus could be used to dupe items
+        StorageControllerContainerBase container = StorageControllerContainerBase.getValidOpenContainer(player);
+        if (container == null) {
             return;
         }
         IStorageController storageController = container.getStorageController();
-        if (storageController == null) {
-            return;
-        }
         //clear the current crafting matrix
         StorageUtil.clearOpenCraftingMatrix(player, false);
 
