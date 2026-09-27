@@ -188,7 +188,9 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
 
     @Override
     public void preRemoveSideEffects(BlockPos pos, BlockState state) {
-        StorageUtil.dropInventoryItems(this);
+        //do not use the capability for direction null here, it only exposes the first slots for jade
+        StorageUtil.dropInventoryItems(this.level, this.getBlockPos(), this.combinedHandler);
+        this.clearContent();
         super.preRemoveSideEffects(pos, state);
     }
 
