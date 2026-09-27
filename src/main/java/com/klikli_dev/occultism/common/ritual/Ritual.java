@@ -453,8 +453,26 @@ public abstract class Ritual {
     public void markNextIngredient(Level level,
                                    BlockPos goldenBowlPosition,
                                    Ingredient ingredient, int tier) {
-        List<SacrificialBowlBlockEntity> sacrificialBowls = this.getSacrificialBowls(level, goldenBowlPosition);
+        this.markNextIngredient(level, goldenBowlPosition, this.getSacrificialBowls(level, goldenBowlPosition), ingredient, tier);
+    }
+
+    /**
+     * Mark the next ingredient to consume.
+     *
+     * @param level              the level.
+     * @param goldenBowlPosition the position of the golden bowl.
+     * @param sacrificialBowls   the list of sacrificial bowls to check, e.g. a list cached by the golden bowl.
+     * @param ingredient         the ingredient to consume.
+     * @param tier               the tier of central bowl
+     */
+    public void markNextIngredient(Level level,
+                                   BlockPos goldenBowlPosition,
+                                   List<SacrificialBowlBlockEntity> sacrificialBowls,
+                                   Ingredient ingredient, int tier) {
         for (SacrificialBowlBlockEntity sacrificialBowl : sacrificialBowls) {
+            if (sacrificialBowl.isRemoved())
+                continue;
+
             //first simulate removal to check the ingredient
             ItemStack stack = sacrificialBowl.itemStackHandler.getResource(0).toStack();
             if (ingredient.test(stack)) {
