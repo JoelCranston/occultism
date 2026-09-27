@@ -26,6 +26,7 @@ import com.google.common.base.Predicate;
 import com.klikli_dev.occultism.common.entity.ai.EntitySorter;
 import com.klikli_dev.occultism.common.entity.spirit.SpiritEntity;
 import com.klikli_dev.occultism.util.ItemTransferUtil;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
@@ -55,9 +56,10 @@ public class PickupItemsGoal extends TargetGoal {
             @Override
             public boolean apply(@Nullable ItemEntity item) {
                 ItemStack stack = item.getItem();
-                return !stack.isEmpty() && entity.canPickupItem(item) && ItemTransferUtil.insertItemStacked(
+                //check if we have space first, as that is much cheaper than the job specific checks
+                return !stack.isEmpty() && ItemTransferUtil.insertItemStacked(
                         entity.inventory, stack, true).getCount() <
-                        stack.getCount();
+                        stack.getCount() && entity.canPickupItem(item);
             }
 
         };
@@ -74,6 +76,12 @@ public class PickupItemsGoal extends TargetGoal {
             return false;
         }
         if (this.executionChance > 0 && this.entity.getRandom().nextInt(this.executionChance) != 0 && worldTime != 0) {
+            return false;
+        }
+
+        //hand already full, no need to look for items
+        ItemStack handStack = this.entity.getItemInHand(InteractionHand.MAIN_HAND);
+        if (!handStack.isEmpty() && handStack.getCount() >= handStack.getMaxStackSize()) {
             return false;
         }
 

@@ -39,9 +39,10 @@ public abstract class FilterableProcessingSpiritJob extends SpiritJob implements
     }
 
     protected boolean matchesPickupItem(ItemStack stack, List<Ingredient> recipeIngredients) {
+        //check the filter first, it is much cheaper than testing all recipe ingredients
         return !stack.isEmpty()
-                && recipeIngredients.stream().anyMatch(ingredient -> ingredient.test(stack))
-                && EntityItemFilter.matches(this.entity.level(), this.entity.getFilterItem(), stack, true);
+                && EntityItemFilter.matches(this.entity.level(), this.entity.getFilterItem(), stack, true)
+                && recipeIngredients.stream().anyMatch(ingredient -> ingredient.test(stack));
     }
 
     protected boolean matchesPickupItem(ItemEntity entity, List<Ingredient> recipeIngredients) {
