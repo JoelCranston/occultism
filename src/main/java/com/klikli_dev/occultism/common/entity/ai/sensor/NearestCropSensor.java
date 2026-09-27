@@ -19,9 +19,9 @@ import net.minecraft.world.level.block.CropBlock;
 import net.minecraft.world.level.block.FarmlandBlock;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Sets the NEAREST_CROP memory to the closest crop in the work area.
@@ -83,20 +83,25 @@ public class NearestCropSensor<E extends SpiritEntity> extends ExtendedSensor<E>
             }
         }
 
-        //get blocks in work area. We do /2 because we offset from the center
-        var blocksInWorkArea = workAreaCenter != null && workAreaSize != null ? BlockPos.betweenClosedStream(
-                workAreaCenter.offset(-workAreaSize / 2, -workAreaSize / 2, -workAreaSize / 2),
-                workAreaCenter.offset(workAreaSize / 2, workAreaSize / 2, workAreaSize / 2)
-        ).map(BlockPos::immutable) : BlockPos.betweenClosedStream(-1, -1, -1, 1, 1, 1);
+        //work area not yet set up (job not initialized), wait for the next scan
+        if (workAreaCenter == null || workAreaSize == null)
+            return;
 
-        //filter potential Roots
-        List<BlockPos> potentialRoots = blocksInWorkArea
-                .filter(pos -> isGrowthCrop(level, pos)
-                        && isCropSoil(level, pos.below())
-                        && !nonCrop.contains(pos)
-                        && !unreachableCrops.contains(pos)
-                )
-                .collect(Collectors.toList());
+        //get blocks in work area. We do /2 because we offset from the center
+        //iterate with a mutable pos, only matches are copied, and never load chunks
+        List<BlockPos> potentialRoots = new ArrayList<>();
+        for (BlockPos pos : BlockPos.betweenClosed(
+                workAreaCenter.offset(-workAreaSize / 2, -workAreaSize / 2, -workAreaSize / 2),
+                workAreaCenter.offset(workAreaSize / 2, workAreaSize / 2, workAreaSize / 2))) {
+            //filter potential Roots
+            if (level.hasChunkAt(pos)
+                    && isGrowthCrop(level, pos)
+                    && isCropSoil(level, pos.below())
+                    && !nonCrop.contains(pos)
+                    && !unreachableCrops.contains(pos)) {
+                potentialRoots.add(pos.immutable());
+            }
+        }
 
         //TODO: refactor to search in increasing radius's? (manhattan distance helper might help, or "closest match"
 
