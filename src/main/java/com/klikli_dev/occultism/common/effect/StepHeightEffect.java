@@ -35,6 +35,9 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 public class StepHeightEffect extends MobEffect {
 
+    private static final int STEP_BLOCKED_DURATION = 5;
+    private static final int STEP_BLOCKED_REFRESH_THRESHOLD = 2;
+
     public StepHeightEffect() {
         super(MobEffectCategory.BENEFICIAL, 3402751);
         this.addAttributeModifier(Attributes.STEP_HEIGHT, Identifier.fromNamespaceAndPath(Occultism.MODID, "step_height"), 0.27, Operation.ADD_VALUE);
@@ -42,8 +45,12 @@ public class StepHeightEffect extends MobEffect {
 
     @Override
     public boolean applyEffectTick(ServerLevel level, LivingEntity livingEntity, int amplifier) {
-        if (livingEntity.isShiftKeyDown())
-            livingEntity.addEffect(new MobEffectInstance(OccultismEffects.STEP_BLOCKED, 2, 1, true, false));
+        if (livingEntity.isShiftKeyDown()) {
+            //only refresh the block when it is missing or about to run out, re-adding it every tick sends effect updates and rebuilds attributes
+            MobEffectInstance blocked = livingEntity.getEffect(OccultismEffects.STEP_BLOCKED);
+            if (blocked == null || blocked.getDuration() <= STEP_BLOCKED_REFRESH_THRESHOLD)
+                livingEntity.addEffect(new MobEffectInstance(OccultismEffects.STEP_BLOCKED, STEP_BLOCKED_DURATION, 1, true, false));
+        }
         return true;
     }
 
