@@ -113,17 +113,22 @@ public class PlayerEventHandler {
                     return;
                 }
 
-                //consume all datura
-                list.forEach(e -> e.remove(RemovalReason.DISCARDED));
+                //only act (and consume the datura) if the spirit fire can actually be placed
+                if (!level.getBlockState(pos).canBeReplaced()) {
+                    return;
+                }
 
-                //if there is air, place block and play sound
-                if (level.getBlockState(pos).canBeReplaced()) {
-                    //sound based on the item used
-                    SoundEvent soundEvent =
-                            isFlintAndSteel ? SoundEvents.FLINTANDSTEEL_USE : SoundEvents.FIRECHARGE_USE;
-                    level.playSound(event.getEntity(), pos, soundEvent,
-                            SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
+                //sound based on the item used
+                SoundEvent soundEvent =
+                        isFlintAndSteel ? SoundEvents.FLINTANDSTEEL_USE : SoundEvents.FIRECHARGE_USE;
+                level.playSound(event.getEntity(), pos, soundEvent,
+                        SoundSource.BLOCKS, 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
 
+                if (!level.isClientSide()) {
+                    //consume all datura
+                    list.forEach(e -> e.remove(RemovalReason.DISCARDED));
+
+                    //place spirit fire
                     level.setBlock(pos, OccultismBlocks.SPIRIT_FIRE.get().defaultBlockState(), 11);
 
                     //now handle used item
@@ -134,6 +139,7 @@ public class PlayerEventHandler {
                         event.getItemStack().shrink(1);
                     }
                 }
+
                 //finally, cancel original event to prevent real action and show use animation
                 event.setCanceled(true);
                 event.getEntity().swing(InteractionHand.MAIN_HAND);
@@ -164,26 +170,42 @@ public class PlayerEventHandler {
         if (!(blockEntity instanceof ChiseledBookShelfBlockEntity bookShelf))
             return;
 
-        for (int i = 0; i < 6; i++) {
-            if (bookShelf.getItem(i).getItem() instanceof BookOfBindingItem book) {
-                if (book.equals(OccultismItems.BOOK_OF_BINDING_EMPTY.get())) {
-                    ItemStack dye = event.getEntity().getOffhandItem();
-                    if (dye.getCount() > 3) {
-                        List<ItemStack> ingredients = List.of(ItemStack.EMPTY, dye, ItemStack.EMPTY, dye, bookShelf.getItem(i), dye, ItemStack.EMPTY, dye, ItemStack.EMPTY);
-                        CraftingInput input = CraftingInput.of(3, 3, ingredients);
-                        Optional<RecipeHolder<CraftingRecipe>> optional = event.getLevel().getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, event.getLevel());
-                        if (optional.isPresent()) {
-                            bookShelf.setItem(i, BoundBookOfBindingRecipe.bookshelfCraft(
-                                    optional.get().value().assemble(input).copy(), event.getItemStack()));
-                            if (!event.getEntity().isCreative())
-                                dye.shrink(4);
+        boolean changed = false;
+        if (event.getLevel().isClientSide()) {
+            //the crafting happens on the server, on the client we only predict if there is something to bind
+            for (int i = 0; i < 6; i++) {
+                if (bookShelf.getItem(i).getItem() instanceof BookOfBindingItem) {
+                    changed = true;
+                    break;
+                }
+            }
+        } else {
+            for (int i = 0; i < 6; i++) {
+                if (bookShelf.getItem(i).getItem() instanceof BookOfBindingItem book) {
+                    if (book.equals(OccultismItems.BOOK_OF_BINDING_EMPTY.get())) {
+                        ItemStack dye = event.getEntity().getOffhandItem();
+                        if (dye.getCount() > 3) {
+                            List<ItemStack> ingredients = List.of(ItemStack.EMPTY, dye, ItemStack.EMPTY, dye, bookShelf.getItem(i), dye, ItemStack.EMPTY, dye, ItemStack.EMPTY);
+                            CraftingInput input = CraftingInput.of(3, 3, ingredients);
+                            Optional<RecipeHolder<CraftingRecipe>> optional = event.getLevel().getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, event.getLevel());
+                            if (optional.isPresent()) {
+                                bookShelf.setItem(i, BoundBookOfBindingRecipe.bookshelfCraft(
+                                        optional.get().value().assemble(input).copy(), event.getItemStack()));
+                                if (!event.getEntity().isCreative())
+                                    dye.shrink(4);
+                                changed = true;
+                            }
                         }
+                    } else {
+                        bookShelf.setItem(i, BoundBookOfBindingRecipe.bookshelfCraft(book.getDefaultInstance(), event.getItemStack()));
+                        changed = true;
                     }
-                } else {
-                    bookShelf.setItem(i, BoundBookOfBindingRecipe.bookshelfCraft(book.getDefaultInstance(), event.getItemStack()));
                 }
             }
         }
+
+        if (!changed)
+            return;
 
         //finally, cancel original event to prevent real action and show use animation
         event.setCancellationResult(InteractionResult.FAIL);
