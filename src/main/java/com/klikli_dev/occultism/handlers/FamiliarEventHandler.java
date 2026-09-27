@@ -65,9 +65,13 @@ public class FamiliarEventHandler {
     @SubscribeEvent
     public static void beaverFindTree(BlockGrowFeatureEvent event) {
         LevelAccessor world = event.getLevel();
+        if (world.isClientSide())
+            return;
+
+        //beavers walk on the ground near the tree, so a smaller vertical range is enough and keeps this cheap
         BlockPos pos = event.getPos();
-        List<BeaverFamiliarEntity> beavers = event.getLevel().getEntitiesOfClass(BeaverFamiliarEntity.class,
-                new AABB(pos).inflate(30), b -> !b.isSitting() && b.isAbilityEnabled(b.getFamiliarOwner()));
+        List<BeaverFamiliarEntity> beavers = world.getEntitiesOfClass(BeaverFamiliarEntity.class,
+                new AABB(pos).inflate(30, 10, 30), b -> !b.isSitting() && b.isAbilityEnabled(b.getFamiliarOwner()));
 
         if (!beavers.isEmpty()) {
             BeaverFamiliarEntity beaver = beavers.get(world.getRandom().nextInt(beavers.size()));
@@ -153,6 +157,10 @@ public class FamiliarEventHandler {
     @SubscribeEvent
     public static void familiarEffectsImmunity(Applicable event) {
         LivingEntity entity = event.getEntity();
+        //only players own familiars, avoid looking up (and attaching) familiar settings for every mob
+        if (!(entity instanceof Player))
+            return;
+
         Holder<MobEffect> effect = event.getEffectInstance().getEffect();
         if (effect == MobEffects.BLINDNESS && FamiliarUtil.isFamiliarEnabled(entity, OccultismEntities.BEHOLDER_FAMILIAR.get())
                 && FamiliarUtil.hasFamiliar(entity, OccultismEntities.BEHOLDER_FAMILIAR.get(), FamiliarEntity::hasBlacksmithUpgrade))
@@ -218,12 +226,12 @@ public class FamiliarEventHandler {
         if (!source.is(DamageTypeTags.IS_FALL) && !source.is(DamageTypes.FLY_INTO_WALL))
             return;
 
-        if (FamiliarUtil.hasFamiliar(entity, OccultismEntities.DRIKWING_FAMILIAR_TYPE.get(), DrikwingEntity::hasBlacksmithUpgrade)
-                && FamiliarUtil.isFamiliarEnabled(entity, OccultismEntities.DRIKWING_FAMILIAR.get()))
+        if (FamiliarUtil.isFamiliarEnabled(entity, OccultismEntities.DRIKWING_FAMILIAR.get())
+                && FamiliarUtil.hasFamiliar(entity, OccultismEntities.DRIKWING_FAMILIAR_TYPE.get(), DrikwingEntity::hasBlacksmithUpgrade))
             event.setCanceled(true);
 
-        if (FamiliarUtil.hasFamiliar(entity, OccultismEntities.WINGNIS_FAMILIAR_TYPE.get())
-                && FamiliarUtil.isFamiliarEnabled(entity, OccultismEntities.WINGNIS_FAMILIAR.get()))
+        if (!event.isCanceled() && FamiliarUtil.isFamiliarEnabled(entity, OccultismEntities.WINGNIS_FAMILIAR.get())
+                && FamiliarUtil.hasFamiliar(entity, OccultismEntities.WINGNIS_FAMILIAR_TYPE.get()))
             event.setCanceled(true);
     }
 
