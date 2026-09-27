@@ -139,7 +139,7 @@ public class GuardianFamiliarEntity extends ColoredFamiliarEntity {
     public boolean sacrifice() {
         byte lives = this.getLives();
         boolean success = lives > 0;
-        if (lives == DEATHS_DOOR)
+        if (lives == DEATHS_DOOR && this.getFamiliarOwner() != null)
             OccultismAdvancements.FAMILIAR.get().trigger(this.getFamiliarOwner(), Type.GUARDIAN_ULTIMATE_SACRIFICE);
         this.setLives((byte) (lives - 1));
         return success;
@@ -171,7 +171,8 @@ public class GuardianFamiliarEntity extends ColoredFamiliarEntity {
 
     @Override
     public Iterable<MobEffectInstance> getFamiliarEffects() {
-        if (this.effectDefinitionList == null || this.effectDefinitionList.isEmpty() || this.getLives() <= 0)
+        if (this.effectDefinitionList == null || this.effectDefinitionList.isEmpty() || this.getLives() <= 0
+                || this.getOwner() == null)
             return List.of();
 
         FamiliarSettingsData data = this.getOwner().getData(OccultismDataStorage.FAMILIAR_SETTINGS.get());
@@ -230,10 +231,13 @@ public class GuardianFamiliarEntity extends ColoredFamiliarEntity {
     @Override
     public void readAdditionalSaveData(ValueInput input) {
         super.readAdditionalSaveData(input);
-        // Note: "variants" guard removed - ValueInput has no contains() method
-        this.setTree(input.getBooleanOr("hasTree", false));
-        this.setBird(input.getBooleanOr("hasBird", false));
-        this.setTools(input.getBooleanOr("hasTools", false));
+        //legacy variant flags are no longer written, only apply them if present so they do not clobber the variants read by super
+        if (input.getBooleanOr("hasTree", false))
+            this.setTree(true);
+        if (input.getBooleanOr("hasBird", false))
+            this.setBird(true);
+        if (input.getBooleanOr("hasTools", false))
+            this.setTools(true);
         this.setLives(input.getByteOr("lives", (byte) 0));
 
         if (input.getBooleanOr("for_book", false)) {
