@@ -93,7 +93,7 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
     protected MessageUpdateStacks lastSentStacks;
     protected int lastSentLinkedMachinesHash;
     protected boolean linkedMachinesSent;
-    protected long lastForcedStorageUpdateTime = Long.MIN_VALUE;
+    protected long lastForcedStorageUpdateTime = -STORAGE_REQUEST_MIN_INTERVAL;
 
     protected StorageControllerContainerBase(@Nullable MenuType<?> type, int id, Inventory playerInventory) {
         super(type, id);
