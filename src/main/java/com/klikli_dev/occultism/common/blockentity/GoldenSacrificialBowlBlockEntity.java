@@ -584,8 +584,8 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
                             ritualRecipe.value().getIngredients())) {
                         this.castingPlayer = serverPlayer; // set casting player so the item stack handler insert code can access it
                         try (var tx = Transaction.openRoot()) {
-                            this.itemStackHandler.insert(0, ItemResource.of(activationItem), 1, tx);
-                            activationItem.shrink(1);
+                            int inserted = this.itemStackHandler.insert(0, ItemResource.of(activationItem), 1, tx);
+                            activationItem.shrink(inserted);
                             tx.commit();
                         }
                         //no need to start the ritual as insertItem calls it
