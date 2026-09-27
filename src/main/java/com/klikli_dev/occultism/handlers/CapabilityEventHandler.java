@@ -37,7 +37,8 @@ public class CapabilityEventHandler {
     @SubscribeEvent
     public static void onPlayerTick(final Post evt) {
         //Reset the double jump capability
-        if (evt.getEntity().onGround()) {
+        //only write when needed, setData marks the attachment dirty
+        if (evt.getEntity().onGround() && evt.getEntity().getData(OccultismDataStorage.DOUBLE_JUMP) != 0) {
             evt.getEntity().setData(OccultismDataStorage.DOUBLE_JUMP, 0);
         }
     }
