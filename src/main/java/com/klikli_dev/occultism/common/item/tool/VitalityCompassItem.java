@@ -4,10 +4,9 @@ import com.klikli_dev.occultism.registry.OccultismDataComponents;
 import com.klikli_dev.occultism.registry.OccultismTags.Entities;
 import com.klikli_dev.occultism.util.ItemNBTUtil;
 import com.klikli_dev.occultism.util.TextUtil;
-import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -18,7 +17,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
-import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
@@ -26,7 +24,7 @@ import java.util.function.Consumer;
 public class VitalityCompassItem extends Item {
 
     public static final float NOT_FOUND = 0;
-    private final CompassWobble wobbleRandom = new CompassWobble();
+    private static final double TARGET_UPDATE_DISTANCE_SQ = 4;
 
     public VitalityCompassItem(Properties properties) {
         super(properties);
@@ -68,77 +66,32 @@ public class VitalityCompassItem extends Item {
 
     @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, @Nullable EquipmentSlot slot) {
+        //legacy: the angle used to be computed on the server every tick, it is now computed on the client.
+        if (stack.has(OccultismDataComponents.COMPASS_ANGLE))
+            stack.remove(OccultismDataComponents.COMPASS_ANGLE);
+
+        GlobalPos currentTarget = stack.get(OccultismDataComponents.COMPASS_TARGET);
+        GlobalPos newTarget = null;
         if (stack.has(OccultismDataComponents.SPIRIT_ENTITY_UUID)) {
             Entity target = level.getEntity(stack.get(OccultismDataComponents.SPIRIT_ENTITY_UUID));
-            if (target != null && target.level().dimension() == entity.level().dimension()) {
-                stack.set(OccultismDataComponents.COMPASS_ANGLE, this.getRotationTowardsCompassTarget(entity, target.blockPosition()));
-            } else {
-                stack.set(OccultismDataComponents.COMPASS_ANGLE, this.getRandomlySpinningRotation(entity.getId(), level.getGameTime()));
-            }
-        } else {
-            stack.set(OccultismDataComponents.COMPASS_ANGLE, this.getRandomlySpinningRotation(entity.getId(), level.getGameTime()));
-        }
-    }
-
-    private float getRotationTowardsCompassTarget(Entity entity, BlockPos pos) {
-        double d0 = this.getAngleFromEntityToPos(entity, pos);
-        double d1 = this.getWrappedVisualRotationY(entity);
-        if (entity instanceof Player player) {
-            if (player.isLocalPlayer() && player.level().tickRateManager().runsNormally()) {
-                return Mth.positiveModulo((float) d0, 1.0F);
+            if (target != null) {
+                newTarget = GlobalPos.of(target.level().dimension(), target.blockPosition());
             }
         }
 
-        double d2 = 0.5 - (d1 - 0.25 - d0);
-        return Mth.positiveModulo((float) d2, 1.0F);
-    }
-
-    private double getAngleFromEntityToPos(Entity entity, BlockPos pos) {
-        Vec3 vec3 = Vec3.atCenterOf(pos);
-        return Math.atan2(vec3.z() - entity.getZ(), vec3.x() - entity.getX()) / 6.2831854820251465;
-    }
-
-    private double getWrappedVisualRotationY(Entity entity) {
-        return entity instanceof Player player ? Mth.positiveModulo((player.getYHeadRot() / 360.0F), 1.0) : Mth.positiveModulo((entity.getVisualRotationYInDegrees() / 360.0F), 1.0);
+        //only store the target position if it changed noticeably (or periodically), to avoid syncing the stack every tick
+        if (newTarget == null) {
+            if (currentTarget != null)
+                stack.remove(OccultismDataComponents.COMPASS_TARGET);
+        } else if (currentTarget == null || !currentTarget.dimension().equals(newTarget.dimension()) ||
+                currentTarget.pos().distSqr(newTarget.pos()) > TARGET_UPDATE_DISTANCE_SQ ||
+                (level.getGameTime() % 20 == 0 && !currentTarget.pos().equals(newTarget.pos()))) {
+            stack.set(OccultismDataComponents.COMPASS_TARGET, newTarget);
+        }
     }
 
     @Override
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
         return false;
-    }
-
-    private float getRandomlySpinningRotation(int seed, long ticks) {
-        if (this.wobbleRandom.shouldUpdate(ticks)) {
-            this.wobbleRandom.update(ticks, Math.random());
-        }
-
-        double d0 = this.wobbleRandom.rotation + (double) ((float) this.hash(seed) / 2.14748365E9F);
-        return Mth.positiveModulo((float) d0, 1.0F);
-    }
-
-    private int hash(int value) {
-        return value * 1327217883;
-    }
-
-    static class CompassWobble {
-        double rotation;
-        private double deltaRotation;
-        private long lastUpdateTick;
-
-        CompassWobble() {
-        }
-
-        boolean shouldUpdate(long ticks) {
-            return this.lastUpdateTick != ticks;
-        }
-
-        void update(long ticks, double rotation) {
-            this.lastUpdateTick = ticks;
-            double d0 = rotation - this.rotation;
-            d0 = Mth.positiveModulo(d0 + 0.5, 1.0) - 0.5;
-            this.deltaRotation += d0 * 0.1;
-            this.deltaRotation *= 0.8;
-            this.rotation = Mth.positiveModulo(this.rotation + this.deltaRotation, 1.0);
-        }
     }
 }

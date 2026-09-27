@@ -10,6 +10,7 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.DynamicOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -214,6 +215,11 @@ public class OccultismDataComponents {
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Float>> COMPASS_ANGLE = DATA_COMPONENTS.registerComponentType("angle", builder -> builder
             .persistent(Codec.FLOAT)
             .networkSynchronized(ByteBufCodecs.FLOAT)
+            .cacheEncoding()
+    );
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<GlobalPos>> COMPASS_TARGET = DATA_COMPONENTS.registerComponentType("compass_target", builder -> builder
+            .persistent(GlobalPos.CODEC)
+            .networkSynchronized(GlobalPos.STREAM_CODEC)
             .cacheEncoding()
     );
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<UUID>> LINKED_PLAYER_UUID = DATA_COMPONENTS.registerComponentType("linked_player_uuid", builder -> builder
