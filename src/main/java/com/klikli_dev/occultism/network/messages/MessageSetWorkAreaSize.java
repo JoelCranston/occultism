@@ -58,6 +58,10 @@ public class MessageSetWorkAreaSize implements IMessage {
 
     @Override
     public void onServerReceived(MinecraftServer minecraftServer, ServerPlayer player) {
+        //ignore invalid sizes sent by the client
+        if (this.workAreaSize < 0 || this.workAreaSize >= WorkAreaSize.values().length)
+            return;
+
         ItemStack stack = player.getItemInHand(this.hand);
         if (stack.getItem() instanceof BookOfCallingItem) {
             ItemNBTUtil.getSpiritEntity(stack).ifPresent(spirit -> {
