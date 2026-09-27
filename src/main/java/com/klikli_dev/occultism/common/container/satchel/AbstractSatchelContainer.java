@@ -61,7 +61,8 @@ public abstract class AbstractSatchelContainer extends AbstractContainerMenu {
 
     @Override
     public void broadcastChanges() {
-        if (this.satchelInventory instanceof SatchelInventory) {
+        //only write back while the satchel is still the stack in the source slot, never into a moved or copied stack
+        if (this.satchelInventory instanceof SatchelInventory && this.stillValid(this.playerInventory.player)) {
             ((SatchelInventory) this.satchelInventory).writeItemStack();
         }
         super.broadcastChanges();
