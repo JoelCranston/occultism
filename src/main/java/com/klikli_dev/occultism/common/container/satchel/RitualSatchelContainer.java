@@ -3,7 +3,6 @@ package com.klikli_dev.occultism.common.container.satchel;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.inventory.Slot;
 
 import javax.annotation.Nullable;
 
@@ -26,14 +25,14 @@ public abstract class RitualSatchelContainer extends AbstractSatchelContainer {
 
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 9; j++)
-                this.addSlot(new Slot(this.playerInventory, j + i * 9 + hotbarSlots, PLAYER_INVENTORY_LEFT + j * 18,
+                this.addSlot(this.createPlayerSlot(j + i * 9 + hotbarSlots, PLAYER_INVENTORY_LEFT + j * 18,
                         PLAYER_INVENTORY_TOP + i * 18));
     }
 
     @Override
     protected void setupPlayerHotbar() {
         for (int i = 0; i < 9; i++) {
-            this.addSlot(new Slot(this.playerInventory, i, HOTBAR_LEFT + i * 18, HOTBAR_TOP));
+            this.addSlot(this.createPlayerSlot(i, HOTBAR_LEFT + i * 18, HOTBAR_TOP));
         }
     }
 

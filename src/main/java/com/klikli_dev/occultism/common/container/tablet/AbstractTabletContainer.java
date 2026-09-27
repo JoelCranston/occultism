@@ -22,7 +22,6 @@
 
 package com.klikli_dev.occultism.common.container.tablet;
 
-import com.klikli_dev.occultism.util.CuriosUtil;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
@@ -47,11 +46,7 @@ public abstract class AbstractTabletContainer extends AbstractContainerMenu {
         this.playerInventory = playerInventory;
         this.selectedSlot = selectedSlot;
 
-        if (this.selectedSlot == -1) {
-            this.tabletStack = CuriosUtil.getBackpack(playerInventory.player);
-        } else {
-            this.tabletStack = playerInventory.player.getInventory().getItem(this.selectedSlot).copy();
-        }
+        this.tabletStack = this.getSourceStack(playerInventory.player).copy();
 
 
         this.setupTabletSlots();
@@ -103,14 +98,43 @@ public abstract class AbstractTabletContainer extends AbstractContainerMenu {
         return itemstack;
     }
 
+    /**
+     * @return the stack currently in the player inventory slot the tablet was opened from (including Inventory.SLOT_OFFHAND).
+     */
+    protected ItemStack getSourceStack(Player player) {
+        if (this.selectedSlot < 0 || this.selectedSlot >= player.getInventory().getContainerSize())
+            return ItemStack.EMPTY;
+        return player.getInventory().getItem(this.selectedSlot);
+    }
+
     @Override
     public boolean stillValid(Player player) {
-        if (this.selectedSlot == -1) {
-            return CuriosUtil.getBackpack(player).getItem() == this.tabletStack.getItem();
+        ItemStack sourceStack = this.getSourceStack(player);
+        if (this.tabletInventory instanceof TabletInventory inventory) {
+            //server side: the tablet we are writing to must still be exactly the stack in the source slot.
+            return !sourceStack.isEmpty() && sourceStack == inventory.getItemStack();
         }
-        if (this.selectedSlot < 0 || this.selectedSlot >= player.getInventory().getContainerSize())
-            return false;
-        return player.getInventory().getItem(this.selectedSlot).getItem() == this.tabletStack.getItem();
+        return !sourceStack.isEmpty() && sourceStack.getItem() == this.tabletStack.getItem();
+    }
+
+    /**
+     * Creates a player inventory slot, locking the slot that holds the open tablet so it cannot be moved.
+     */
+    protected Slot createPlayerSlot(int slotIndex, int x, int y) {
+        if (slotIndex != this.selectedSlot)
+            return new Slot(this.playerInventory, slotIndex, x, y);
+
+        return new Slot(this.playerInventory, slotIndex, x, y) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return false;
+            }
+
+            @Override
+            public boolean mayPickup(Player playerIn) {
+                return false;
+            }
+        };
     }
 
     protected void setupPlayerInventorySlots() {
@@ -120,7 +144,7 @@ public abstract class AbstractTabletContainer extends AbstractContainerMenu {
 
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 9; j++)
-                this.addSlot(new Slot(this.playerInventory, j + i * 9 + hotbarSlots, playerInventoryLeft + j * 18,
+                this.addSlot(this.createPlayerSlot(j + i * 9 + hotbarSlots, playerInventoryLeft + j * 18,
                         playerInventoryTop + i * 18));
     }
 
@@ -128,7 +152,7 @@ public abstract class AbstractTabletContainer extends AbstractContainerMenu {
         int hotbarTop = 232;
         int hotbarLeft = 44;
         for (int i = 0; i < 9; i++) {
-            this.addSlot(new Slot(this.playerInventory, i, hotbarLeft + i * 18, hotbarTop));
+            this.addSlot(this.createPlayerSlot(i, hotbarLeft + i * 18, hotbarTop));
         }
     }
 
