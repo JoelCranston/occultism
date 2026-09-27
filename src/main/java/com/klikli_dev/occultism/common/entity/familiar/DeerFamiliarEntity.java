@@ -114,7 +114,9 @@ public class DeerFamiliarEntity extends FamiliarEntity {
     @Override
     public void readAdditionalSaveData(ValueInput input) {
         super.readAdditionalSaveData(input);
-        this.setRedNose(input.getBooleanOr("hasRedNose", false));
+        //the legacy red nose flag is no longer written, only apply it if present so it does not clobber the variants read by super
+        if (input.getBooleanOr("hasRedNose", false))
+            this.setRedNose(true);
     }
 
     public boolean hasRedNose() {
