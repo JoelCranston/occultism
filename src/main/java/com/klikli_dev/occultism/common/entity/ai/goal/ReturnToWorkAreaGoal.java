@@ -23,6 +23,8 @@
 package com.klikli_dev.occultism.common.entity.ai.goal;
 
 import com.klikli_dev.occultism.common.entity.spirit.SpiritEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
 
@@ -40,7 +42,8 @@ public class ReturnToWorkAreaGoal extends Goal {
     public ReturnToWorkAreaGoal(SpiritEntity entity, int executionChance) {
         this.entity = entity;
         this.executionChance = executionChance;
-        this.setFlags(EnumSet.of(Flag.TARGET));
+        //we steer navigation, so we must not run in parallel to other goals that move the entity
+        this.setFlags(EnumSet.of(Flag.MOVE));
     }
 
     @Override
@@ -55,7 +58,24 @@ public class ReturnToWorkAreaGoal extends Goal {
             return false;
         }
 
-        return this.entity.getWorkAreaPosition().isPresent();
+        //do not interfere with depositing items, the deposit target may be outside the work area
+        if (!this.entity.getItemInHand(InteractionHand.MAIN_HAND).isEmpty() &&
+                (this.entity.getDepositPosition().isPresent() || this.entity.getDepositEntityUUID().isPresent())) {
+            return false;
+        }
+
+        return this.entity.getWorkAreaPosition().isPresent() && this.isOutsideWorkArea();
+    }
+
+    /**
+     * @return true if the entity is outside of the work area (which uses only half height, same as item pickup).
+     */
+    protected boolean isOutsideWorkArea() {
+        BlockPos center = this.entity.getWorkAreaCenter();
+        int workAreaSize = this.entity.getWorkAreaSize().getValue();
+        return Math.abs(this.entity.getX() - (center.getX() + 0.5)) > workAreaSize ||
+                Math.abs(this.entity.getY() - center.getY()) > workAreaSize / 2.0 ||
+                Math.abs(this.entity.getZ() - (center.getZ() + 0.5)) > workAreaSize;
     }
 
     @Override
