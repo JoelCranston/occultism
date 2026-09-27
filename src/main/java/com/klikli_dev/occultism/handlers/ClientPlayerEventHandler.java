@@ -40,7 +40,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
@@ -59,7 +58,6 @@ import net.neoforged.neoforge.client.event.InputEvent.MouseButton;
 import net.neoforged.neoforge.client.event.ScreenEvent.KeyPressed.Post;
 import net.neoforged.neoforge.event.PlayLevelSoundEvent.AtPosition;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -201,16 +199,8 @@ public class ClientPlayerEventHandler {
             if (contents == ItemContainerContents.EMPTY)
                 return;
 
-            NonNullList<ItemStack> items = NonNullList.create();
-            for (int i = 0; i < contents.getSlots(); i++) {
-                if (!contents.getStackInSlot(i).isEmpty())
-                    items.add(contents.getStackInSlot(i).copy());
-            }
-            int i = event.getScrollDeltaY() > 0 ? 1 : -1;
-            Collections.rotate(items, i);
-            ItemContainerContents rotated = ItemContainerContents.fromItems(items);
-
-            Networking.sendToServer(new MessageSetContents(rotated, hand));
+            //the server rotates the contents it already knows, we only tell it the direction
+            Networking.sendToServer(new MessageRotateTabletContents(hand, event.getScrollDeltaY() > 0));
             event.setCanceled(true);
         }
     }
