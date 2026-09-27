@@ -108,10 +108,14 @@ public class StableWormholeContainer extends StorageControllerContainerBase {
 
     @Override
     public boolean stillValid(Player player) {
-        if (this.storageController == null || this.stableWormhole == null)
+        if (this.storageController == null || this.stableWormhole == null
+                || this.storageController.isRemoved() || this.stableWormhole.isRemoved())
             return false;
 
         Level level = this.stableWormhole.getLevel();
+        if (level == null)
+            return false;
+
         BlockPos wormholePosition = this.stableWormhole.getBlockPos();
 
         //close container if wormhole block is destroyed
