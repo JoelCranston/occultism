@@ -166,22 +166,20 @@ public class MummyFamiliarRenderer extends MobRenderer<MummyFamiliarEntity, Mumm
             Font font = this.renderer.getFont();
             int textColor = 0xff0000 | ((int) (alpha * 255) << 24);
 
+            float textX = -font.width(KAPOW_TEXT) / 2f;
+
             poseStack.pushPose();
             poseStack.translate(0, 0, -0.01);
-            var matrix = poseStack.last().pose();
-            font.drawInBatch(KAPOW_TEXT, -font.width(KAPOW_TEXT) / 2f, 0, textColor, true,
-                    matrix, bufferSource, DisplayMode.NORMAL, 0, lightCoords);
+            submitNodeCollector.submitText(poseStack, textX, 0, KAPOW_TEXT.getVisualOrderText(), true,
+                    DisplayMode.NORMAL, lightCoords, textColor, 0, 0);
             poseStack.popPose();
 
             poseStack.pushPose();
             poseStack.translate(0, 0, 0.01);
             poseStack.mulPose(new Quaternionf().rotateXYZ(0, 180 * ((float) Math.PI / 180F), 0));
-            matrix = poseStack.last().pose();
-            font.drawInBatch(KAPOW_TEXT, -font.width(KAPOW_TEXT) / 2f, 0, textColor, true,
-                    matrix, bufferSource, DisplayMode.NORMAL, 0, lightCoords);
+            submitNodeCollector.submitText(poseStack, textX, 0, KAPOW_TEXT.getVisualOrderText(), true,
+                    DisplayMode.NORMAL, lightCoords, textColor, 0, 0);
             poseStack.popPose();
-
-            bufferSource.endBatch();
 
             poseStack.popPose();
             poseStack.popPose();
