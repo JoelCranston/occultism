@@ -13,6 +13,8 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.phys.AABB;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiPredicate;
 
@@ -29,7 +31,7 @@ public class NearestJobItemSensor<E extends SpiritEntity> extends ExtendedSensor
         super(DEFAULT_SCAN_RATE_TICKS);
 
         this.predicate = (item, entity) -> {
-            return entity.canPickupItem(item) && entity.hasLineOfSight(item);
+            return entity.canPickupItem(item);
         };
     }
 
@@ -71,15 +73,15 @@ public class NearestJobItemSensor<E extends SpiritEntity> extends ExtendedSensor
         var aabb = new AABB(workAreaCenter.getCenter().add(-workAreaSize / 2f, -workAreaSize / 2f, -workAreaSize / 2f),
                 workAreaCenter.getCenter().add(workAreaSize / 2f, workAreaSize / 2f, workAreaSize / 2f));
 
+        //line of sight checks are expensive, so we only check the closest candidates until we find a visible one
+        List<ItemEntity> candidates = new ArrayList<>(level.getEntitiesOfClass(ItemEntity.class, aabb, candidate -> this.predicate.test(candidate, entity)));
+        candidates.sort(Comparator.comparingDouble(item -> entity.distanceToSqr(item)));
+
         ItemEntity nearestEntity = null;
-        double nearestDistance = Double.MAX_VALUE;
-
-        for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, aabb, candidate -> this.predicate.test(candidate, entity))) {
-            double candidateDistance = entity.distanceToSqr(item);
-
-            if (candidateDistance < nearestDistance) {
-                nearestDistance = candidateDistance;
+        for (ItemEntity item : candidates) {
+            if (entity.hasLineOfSight(item)) {
                 nearestEntity = item;
+                break;
             }
         }
 
