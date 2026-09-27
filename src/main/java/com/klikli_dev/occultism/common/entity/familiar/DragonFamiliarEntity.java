@@ -239,23 +239,25 @@ public class DragonFamiliarEntity extends FamiliarEntity {
     protected InteractionResult mobInteract(Player playerIn, InteractionHand hand) {
         ItemStack stack = playerIn.getItemInHand(hand);
         if (this.hasStick()) {
-            ItemTransferUtil.giveItemToPlayer(playerIn, new ItemStack(Items.STICK));
-            this.setStick(false);
-            return !this.isEffectiveAi() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
+            if (!this.level().isClientSide()) {
+                ItemTransferUtil.giveItemToPlayer(playerIn, new ItemStack(Items.STICK));
+                this.setStick(false);
+            }
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         } else if (stack.is(Tags.Items.NUGGETS_GOLD)) {
             OccultismAdvancements.FAMILIAR.get().trigger(this.getFamiliarOwner(), Type.DRAGON_NUGGET);
             this.greedyTimer += GREEDY_INCREMENT;
-            if (this.isEffectiveAi())
+            if (!this.level().isClientSide())
                 stack.shrink(1);
             else
                 this.level().addParticle(ParticleTypes.HEART, this.getX(), this.getY() + 1, this.getZ(), 0, 0,
                         0);
-            return !this.isEffectiveAi() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         } else if (stack.isEmpty() && playerIn.isShiftKeyDown()) {
             this.petTimer = 0;
             OccultismAdvancements.FAMILIAR.get().trigger(playerIn, Type.DRAGON_PET);
             this.level().addParticle(ParticleTypes.HEART, this.getX(), this.getY() + 1, this.getZ(), 0, 0, 0);
-            return !this.isEffectiveAi() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
+            return this.level().isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER;
         }
         return super.mobInteract(playerIn, hand);
     }

@@ -108,11 +108,13 @@ public class CthulhuFamiliarEntity extends FamiliarEntity {
         ItemStack itemstack = pPlayer.getItemInHand(pHand);
         if (this.getOwner() == pPlayer && itemstack.is(Tags.Items.GEMS_LAPIS)) {
             if (this.level().getGameTime() > this.lastPrismarineTime + PRISMARINE_INTERVAL) {
-                int quant = this.hasIesniumUpgrade() ? RandomSource.create().nextInt(4, 12) :
-                        this.hasBlacksmithUpgrade() ? RandomSource.create().nextInt(1, 5) : 1;
                 this.lastPrismarineTime = this.level().getGameTime();
-                itemstack.shrink(1);
-                ItemTransferUtil.giveItemToPlayer(pPlayer, new ItemStack(Items.PRISMARINE_SHARD, quant));
+                if (!this.level().isClientSide()) {
+                    int quant = this.hasIesniumUpgrade() ? RandomSource.create().nextInt(4, 12) :
+                            this.hasBlacksmithUpgrade() ? RandomSource.create().nextInt(1, 5) : 1;
+                    itemstack.shrink(1);
+                    ItemTransferUtil.giveItemToPlayer(pPlayer, new ItemStack(Items.PRISMARINE_SHARD, quant));
+                }
             } else if (pPlayer.level().isClientSide()) {
                 pPlayer.sendSystemMessage(Component.translatable("dialog.occultism.cthulhu.prismarine_on_cooldown"));
             }

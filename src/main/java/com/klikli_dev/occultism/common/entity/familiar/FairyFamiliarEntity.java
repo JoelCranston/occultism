@@ -194,8 +194,10 @@ public class FairyFamiliarEntity extends FamiliarEntity implements FlyingAnimal 
             if (itemstack.is(Items.ROTTEN_FLESH)) {
                 if (this.level().getGameTime() > this.lastLeatherTime + LEATHER_INTERVAL) {
                     this.lastLeatherTime = this.level().getGameTime();
-                    itemstack.shrink(1);
-                    ItemTransferUtil.giveItemToPlayer(pPlayer, new ItemStack(Items.LEATHER));
+                    if (!this.level().isClientSide()) {
+                        itemstack.shrink(1);
+                        ItemTransferUtil.giveItemToPlayer(pPlayer, new ItemStack(Items.LEATHER));
+                    }
                 } else if (pPlayer.level().isClientSide()) {
                     pPlayer.sendSystemMessage(Component.translatable("dialog.occultism.fairy.leather_on_cooldown"));
                 }
@@ -207,8 +209,10 @@ public class FairyFamiliarEntity extends FamiliarEntity implements FlyingAnimal 
                         pPlayer.sendSystemMessage(Component.translatable("dialog.occultism.fairy.no_upgrade"));
                 } else if (this.level().getGameTime() > this.lastBreathTime + BREATH_INTERVAL) {
                     this.lastBreathTime = this.level().getGameTime();
-                    itemstack.shrink(1);
-                    ItemTransferUtil.giveItemToPlayer(pPlayer, new ItemStack(Items.DRAGON_BREATH));
+                    if (!this.level().isClientSide()) {
+                        itemstack.shrink(1);
+                        ItemTransferUtil.giveItemToPlayer(pPlayer, new ItemStack(Items.DRAGON_BREATH));
+                    }
                 } else if (pPlayer.level().isClientSide()) {
                     pPlayer.sendSystemMessage(Component.translatable("dialog.occultism.fairy.breath_on_cooldown"));
                 }
