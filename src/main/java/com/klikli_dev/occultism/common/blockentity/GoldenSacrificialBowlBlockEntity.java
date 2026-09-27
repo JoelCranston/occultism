@@ -128,15 +128,21 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
 
             @Override
             public int insert(int slot, ItemResource resource, int amount, TransactionContext tx) {
-                if (resource.toStack().getItem() instanceof DummyTooltipItem)
+                //cheap early exits first, the bowl only ever holds a single item
+                if (amount <= 0 || resource.isEmpty() || !this.getResource(slot).isEmpty())
+                    return 0;
+
+                var stack = resource.toStack();
+                if (stack.getItem() instanceof DummyTooltipItem)
                     return this.handleDummyInsert(resource, amount, tx);
 
                 if (GoldenSacrificialBowlBlockEntity.this.getCurrentRitualRecipe() != null)
                     return 0;
 
-                var ritualRecipe = getAllRitualRecipes(GoldenSacrificialBowlBlockEntity.this.level).stream().filter(
-                        r -> r.value().matches(GoldenSacrificialBowlBlockEntity.this.level, GoldenSacrificialBowlBlockEntity.this.getBlockPos(), resource.toStack())
-                ).findFirst().orElse(null);
+                var ritualRecipe = getAllRitualRecipes(GoldenSacrificialBowlBlockEntity.this.level).stream()
+                        .filter(r -> r.value().getActivationItem().test(stack))
+                        .filter(r -> r.value().matches(GoldenSacrificialBowlBlockEntity.this.level, GoldenSacrificialBowlBlockEntity.this.getBlockPos(), stack))
+                        .findFirst().orElse(null);
 
                 if (ritualRecipe == null)
                     return 0;
