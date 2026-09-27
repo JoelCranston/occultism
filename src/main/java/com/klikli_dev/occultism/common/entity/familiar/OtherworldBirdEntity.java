@@ -28,6 +28,7 @@ import com.klikli_dev.occultism.common.data.FamiliarEffects;
 import com.klikli_dev.occultism.common.item.familiar.FamiliarCurio;
 import com.klikli_dev.occultism.registry.OccultismDataStorage;
 import com.klikli_dev.occultism.registry.OccultismItems;
+import com.klikli_dev.occultism.util.FamiliarUtil;
 import net.minecraft.core.HolderSet;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -134,13 +135,13 @@ public abstract class OtherworldBirdEntity extends Parrot implements IFamiliar {
         if (this.level().getGameTime() % 1024 == 0)
             this.heal(1F);
 
-        // Every 10 ticks, attempt to refresh the owner buff
-        if (!this.level().isClientSide() && this.level().getGameTime() % 10 == 0 && this.isTame()) {
+        // Every 10 ticks (staggered by id), attempt to refresh the owner buff
+        if (!this.level().isClientSide() && (this.tickCount + this.getId()) % 10 == 0 && this.isTame()) {
             LivingEntity owner = this.getOwner();
             if (owner != null && this.distanceTo(owner) < MAX_BOOST_DISTANCE) {
                 // close enough to boost
                 for (MobEffectInstance effect : this.getFamiliarEffects())
-                    owner.addEffect(effect);
+                    FamiliarUtil.applyFamiliarEffect(owner, effect);
             }
         }
 
