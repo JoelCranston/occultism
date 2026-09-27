@@ -172,7 +172,7 @@ public class TraderJob extends SpiritJob {
                 if (this.conversionTimer >= this.timeToConvert) {
                     this.conversionTimer = 0;
 
-                    int a = Math.min(this.maxTradesPerRound, handHeld.getCount());
+                    int a = Math.min(Math.max(1, this.maxTradesPerRound), handHeld.getCount());
                     for (int i = 0; i < a; i++) {
                         var result = WeightedRandom.getRandomItem(this.entity.getRandom(), this.possibleResults, WeightedRecipeResult::weight);
                         //Important: copy the result, don't use it raw!
