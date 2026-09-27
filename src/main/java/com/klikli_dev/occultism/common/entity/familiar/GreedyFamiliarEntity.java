@@ -546,7 +546,8 @@ public class GreedyFamiliarEntity extends FamiliarEntity implements IFilterConfi
 
         @Override
         public boolean canUse() {
-            return super.canUse() && !this.mob.getOffhandItem().isEmpty();
+            //check the offhand first, super scans for blocks
+            return !this.mob.getOffhandItem().isEmpty() && super.canUse();
         }
 
         @Override
