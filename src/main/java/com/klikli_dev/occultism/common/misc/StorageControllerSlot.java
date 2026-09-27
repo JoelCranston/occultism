@@ -24,6 +24,7 @@ package com.klikli_dev.occultism.common.misc;
 
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
 import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
+import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -61,20 +62,38 @@ public class StorageControllerSlot extends ResultSlot {
         for (int i = 0; i < this.matrix.getContainerSize(); i++) {
             craftingStacks.add(this.matrix.getItem(i).copy());
         }
-        super.onTake(player, stack);
-        ((AbstractContainerMenu) this.storageControllerContainer).broadcastChanges();
-        for (int i = 0; i < this.matrix.getContainerSize(); i++) {
+
+        //every single matrix change during onTake and the refill would trigger a recipe lookup,
+        //so we lock the recipe while we work and update the matrix once at the end.
+        StorageControllerContainerBase containerBase = this.storageControllerContainer instanceof StorageControllerContainerBase base ? base : null;
+        boolean wasLocked = containerBase != null && containerBase.isRecipeLocked();
+        if (containerBase != null)
+            containerBase.setRecipeLocked(true);
+
+        try {
+            super.onTake(player, stack);
             IStorageController storageController = this.storageControllerContainer.getStorageController();
-            if (this.matrix.getItem(i).isEmpty() && storageController != null) {
-                ItemStack req = storageController.getItemStack(
-                        !craftingStacks.get(i).isEmpty() ? new ItemStackComparator(craftingStacks.get(i)) : null, 1,
-                        false);
-                if (!req.isEmpty()) {
-                    this.matrix.setItem(i, req);
+            for (int i = 0; i < this.matrix.getContainerSize(); i++) {
+                if (this.matrix.getItem(i).isEmpty() && storageController != null) {
+                    ItemStack req = storageController.getItemStack(
+                            !craftingStacks.get(i).isEmpty() ? new ItemStackComparator(craftingStacks.get(i)) : null, 1,
+                            false);
+                    if (!req.isEmpty()) {
+                        this.matrix.setItem(i, req);
+                    }
                 }
             }
+        } finally {
+            if (containerBase != null)
+                containerBase.setRecipeLocked(wasLocked);
         }
-        ((AbstractContainerMenu) this.storageControllerContainer).broadcastChanges();
+
+        if (containerBase != null && !wasLocked) {
+            //updates the stored matrix, broadcasts changes and finds the recipe for the new matrix
+            containerBase.slotsChanged(this.matrix);
+        } else {
+            ((AbstractContainerMenu) this.storageControllerContainer).broadcastChanges();
+        }
         //return stack;
     }
 
