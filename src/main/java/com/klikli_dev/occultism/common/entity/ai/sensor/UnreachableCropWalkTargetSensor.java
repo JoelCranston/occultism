@@ -7,6 +7,7 @@ import com.klikli_dev.occultism.network.Networking;
 import com.klikli_dev.occultism.network.messages.MessageSelectBlock;
 import com.klikli_dev.occultism.registry.OccultismMemoryTypes;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.Brain;
@@ -20,7 +21,13 @@ public class UnreachableCropWalkTargetSensor<E extends LivingEntity> extends Ext
             OccultismMemoryTypes.LAST_CROP_WALK_TARGET.get(),
             OccultismMemoryTypes.WALK_TARGET_UNREACHABLE.get()
     );
+    /**
+     * If we cannot reach the same walk target for this long, it is considered unreachable, regardless of its height.
+     */
+    public static final int UNREACHABLE_AFTER_TICKS = 20 * 5;
     private long lastUnpathableTime = 0L;
+    private BlockPos unreachableTarget;
+    private long unreachableTargetSince = 0L;
 
     public UnreachableCropWalkTargetSensor() {
     }
@@ -44,6 +51,20 @@ public class UnreachableCropWalkTargetSensor<E extends LivingEntity> extends Ext
                     this.lastUnpathableTime = unpathableTime;
                 } else if (this.lastUnpathableTime == unpathableTime) {
                     BrainUtil.clearMemory(brain, OccultismMemoryTypes.WALK_TARGET_UNREACHABLE.get());
+
+                    //track how long we could not reach this specific target, ground level targets are otherwise never marked as unreachable
+                    BlockPos targetPos = walkTarget.getTarget().currentBlockPosition();
+                    if (!targetPos.equals(this.unreachableTarget)) {
+                        this.unreachableTarget = targetPos;
+                        this.unreachableTargetSince = level.getGameTime();
+                    } else if (level.getGameTime() - this.unreachableTargetSince >= UNREACHABLE_AFTER_TICKS) {
+                        this.unreachableTarget = null;
+                        BrainUtil.setMemory(brain, OccultismMemoryTypes.WALK_TARGET_UNREACHABLE.get(), true);
+                        BrainUtil.clearMemory(brain, OccultismMemoryTypes.LAST_CROP_WALK_TARGET.get());
+                        if (Occultism.DEBUG.debugAI) {
+                            Networking.sendToTracking(entity, new MessageSelectBlock(targetPos, 50000, Color.RED));
+                        }
+                    }
                 } else if (this.lastUnpathableTime < unpathableTime) {
                     this.lastUnpathableTime = unpathableTime;
                     BrainUtil.setMemory(brain, OccultismMemoryTypes.WALK_TARGET_UNREACHABLE.get(), walkTarget.getTarget().currentBlockPosition().getY() > entity.getEyeY());
@@ -63,5 +84,6 @@ public class UnreachableCropWalkTargetSensor<E extends LivingEntity> extends Ext
         }
 
         this.lastUnpathableTime = 0L;
+        this.unreachableTarget = null;
     }
 }
