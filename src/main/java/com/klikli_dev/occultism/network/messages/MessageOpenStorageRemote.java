@@ -61,7 +61,11 @@ public class MessageOpenStorageRemote implements IMessage {
                 return;
 
             GlobalBlockPos storageControllerPos = selectedCurio.itemStack.get(OccultismDataComponents.LINKED_STORAGE_CONTROLLER);
-            Level storageControllerWorld = minecraftServer.getLevel(storageControllerPos.getDimensionKey());
+            Level storageControllerWorld = storageControllerPos == null ? null : minecraftServer.getLevel(storageControllerPos.getDimensionKey());
+            //do not load chunks by message
+            if (storageControllerWorld == null || !storageControllerWorld.hasChunkAt(storageControllerPos.getPos()))
+                return;
+
             if (storageControllerWorld.getBlockEntity(storageControllerPos.getPos()) instanceof IStorageController) {
                 player.openMenu(OccultismItems.STORAGE_REMOTE.get(), buffer -> buffer.writeVarInt(selectedCurio.selectedSlot));
             }

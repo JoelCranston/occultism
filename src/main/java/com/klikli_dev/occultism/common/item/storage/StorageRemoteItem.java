@@ -101,17 +101,22 @@ public class StorageRemoteItem extends Item implements MenuProvider {
             return super.use(level, player, hand);
 
         GlobalBlockPos storageControllerPos = stack.get(OccultismDataComponents.LINKED_STORAGE_CONTROLLER);
-        Level storageControllerWorld = level.getServer().getLevel(storageControllerPos.getDimensionKey());
+        Level storageControllerWorld = level.getServer() == null || storageControllerPos == null ? null : level.getServer().getLevel(storageControllerPos.getDimensionKey());
 
         //ensure TE is available
-        if (!storageControllerWorld.hasChunkAt(storageControllerPos.getPos())) {
+        if (storageControllerWorld == null || !storageControllerWorld.hasChunkAt(storageControllerPos.getPos())) {
             player.sendSystemMessage(Component.translatable(this.getDescriptionId() + ".message.not_loaded"));
             return super.use(level, player, hand);
         }
 
         //then access it and if it fits, open UI
         if (storageControllerWorld.getBlockEntity(storageControllerPos.getPos()) instanceof IStorageController && player instanceof ServerPlayer serverPlayer) {
-            serverPlayer.openMenu(this, buffer -> buffer.writeVarInt(player.getInventory().getSelectedSlot()));
+            //send the same slot createMenu uses on the server, otherwise the client locks the wrong slot (e.g. when used from the offhand)
+            SelectedCurio selectedCurio = CuriosUtil.getStorageRemote(player);
+            if (selectedCurio == null)
+                return super.use(level, player, hand);
+
+            serverPlayer.openMenu(this, buffer -> buffer.writeVarInt(selectedCurio.selectedSlot));
             return InteractionResult.SUCCESS;
         }
         return super.use(level, player, hand);
