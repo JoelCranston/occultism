@@ -33,15 +33,10 @@ import java.util.UUID;
 
 /**
  * Keeps track of tamed spirits that died, so books of calling bound to them can be marked as dead.
- * The register only lives as long as the server, and old entries are pruned to avoid unbounded growth.
+ * The register only lives as long as the server, entries are removed once a book picks up the death.
  */
 @EventBusSubscriber(modid = Occultism.MODID)
 public class SpiritDeathRegister {
-
-    /**
-     * Entries older than this (in game ticks) are removed. Books usually pick up the death within a minute.
-     */
-    public static final long PRUNE_AFTER_TICKS = 20 * 60 * 60 * 24;
 
     private static final Map<UUID, Long> DEATHS = new HashMap<>();
 
@@ -52,7 +47,6 @@ public class SpiritDeathRegister {
      * @param deathTime the game time of the death.
      */
     public static void register(UUID spiritId, long deathTime) {
-        DEATHS.values().removeIf(time -> time < deathTime - PRUNE_AFTER_TICKS);
         DEATHS.put(spiritId, deathTime);
     }
 
