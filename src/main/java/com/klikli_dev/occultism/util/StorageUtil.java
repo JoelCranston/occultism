@@ -31,6 +31,7 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.Clearable;
 import net.minecraft.world.Containers;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -292,7 +293,8 @@ public class StorageUtil {
 
     /**
      * Drops all items of the given block entity. Tile entity <bold>must</bold> return a combined item handler for
-     * direction null.
+     * direction null. If the block entity is {@link Clearable}, its contents are cleared afterwards to prevent
+     * duplication, e.g. via still open menus.
      *
      * @param blockEntity the block entity to drop contents for.
      */
@@ -300,6 +302,8 @@ public class StorageUtil {
         var resourceHandler = blockEntity.getLevel().getCapability(Capabilities.Item.BLOCK, blockEntity.getBlockPos(), blockEntity.getBlockState(), blockEntity,null);
         if (resourceHandler != null) {
             dropInventoryItems(blockEntity.getLevel(), blockEntity.getBlockPos(), resourceHandler);
+            if (blockEntity instanceof Clearable clearable)
+                clearable.clearContent();
         }
     }
 
