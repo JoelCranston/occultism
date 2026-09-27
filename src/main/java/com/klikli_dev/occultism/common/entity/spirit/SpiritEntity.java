@@ -27,7 +27,6 @@ import com.klikli_dev.occultism.common.container.spirit.SpiritContainer;
 import com.klikli_dev.occultism.common.entity.IFilterConfigurable;
 import com.klikli_dev.occultism.common.entity.ai.BrainUtil;
 import com.klikli_dev.occultism.common.entity.job.SpiritJob;
-import com.klikli_dev.occultism.common.item.spirit.BookOfCallingItem;
 import com.klikli_dev.occultism.registry.OccultismMemoryTypes;
 import com.klikli_dev.occultism.registry.OccultismSounds;
 import com.klikli_dev.occultism.registry.OccultismTags.Items;
@@ -606,7 +605,7 @@ public abstract class SpiritEntity extends TamableAnimal implements ISkinnedCrea
     public void die(DamageSource cause) {
         if (!this.level().isClientSide()) {
             if (this.isTame()) {
-                BookOfCallingItem.spiritDeathRegister.put(this.uuid, this.level().getGameTime());
+                SpiritDeathRegister.register(this.uuid, this.level().getGameTime());
             }
 
             this.removeJob();

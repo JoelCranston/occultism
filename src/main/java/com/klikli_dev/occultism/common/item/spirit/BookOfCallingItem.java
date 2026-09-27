@@ -26,6 +26,7 @@ import com.klikli_dev.occultism.TranslationKeys;
 import com.klikli_dev.occultism.api.common.data.WorkAreaSize;
 import com.klikli_dev.occultism.api.common.item.IHandleItemMode;
 import com.klikli_dev.occultism.client.gui.GuiHelper;
+import com.klikli_dev.occultism.common.entity.spirit.SpiritDeathRegister;
 import com.klikli_dev.occultism.common.entity.spirit.SpiritEntity;
 import com.klikli_dev.occultism.common.item.spirit.calling.ItemMode;
 import com.klikli_dev.occultism.common.item.spirit.calling.ItemModes;
@@ -68,7 +69,6 @@ public class BookOfCallingItem extends Item implements IHandleItemMode {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static Map<UUID, Long> spiritDeathRegister = new HashMap<>();
     public String translationKeyBase;
     public Predicate<SpiritEntity> targetSpirit;
 
@@ -315,9 +315,9 @@ public class BookOfCallingItem extends Item implements IHandleItemMode {
         if (worldIn.getGameTime() % (20 * 60) == 0) {
             UUID spiritID = ItemNBTUtil.getSpiritEntityUUID(stack);
             if (spiritID != null) {
-                Long deathTime = spiritDeathRegister.get(spiritID);
+                Long deathTime = SpiritDeathRegister.getDeathTime(spiritID);
                 if (deathTime != null && deathTime < worldIn.getGameTime()) {
-                    spiritDeathRegister.remove(spiritID);
+                    SpiritDeathRegister.remove(spiritID);
                     stack.set(OccultismDataComponents.SPIRIT_DEAD, true);
                     stack.remove(OccultismDataComponents.SPIRIT_ENTITY_UUID);
                 }
