@@ -21,6 +21,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
@@ -150,19 +151,29 @@ public class TeleportUtil {
         return safePosition.orElseGet(() -> findSafeTeleportPosition(entity.getType(), level, pos, false).orElse(null));
     }
 
-    public static BlockPos findSafeRTP(Level level, Entity entity, int recursionLeft) {
-        if (recursionLeft <= 0)
-            return null;
+    public static BlockPos findSafeRTP(Level level, Entity entity, int tries) {
+        RandomSource random = level.getRandom();
+        //Respect word border, and ensure a positive range as nextInt(-range, range) throws otherwise
+        int range = Math.max(1, Math.min((int) level.getWorldBorder().getDistanceToBorder(entity), Occultism.SERVER_CONFIG.itemSettings.maxDistanceRTP.getAsInt()));
 
-        BlockPos blockpos;
-        //Respect word border
-        int range = Math.min((int) level.getWorldBorder().getDistanceToBorder(entity), Occultism.SERVER_CONFIG.itemSettings.maxDistanceRTP.getAsInt());
-        //Random direction
-        blockpos = entity.blockPosition().offset(RandomSource.create().nextInt(-range, range), level.getMaxY(), RandomSource.create().nextInt(-range, range));
-        //Find floor
-        while (level.getBlockState(blockpos.below()).isAir() && blockpos.getY() > level.getMinY()) {
-            blockpos = blockpos.below();
+        for (int i = 0; i < tries; i++) {
+            BlockPos blockpos = findRTPCandidate(level, entity, random, range);
+            //Return blockPos if safe, or repeat the process
+            if (blockpos.getY() > level.getMinY()
+                    && !level.getBlockState(blockpos.below()).is(Blocks.WATER)
+                    && !level.getBlockState(blockpos.below()).is(Blocks.LAVA)) {
+                return blockpos;
+            }
         }
+        return null;
+    }
+
+    private static BlockPos findRTPCandidate(Level level, Entity entity, RandomSource random, int range) {
+        //Random direction
+        int x = entity.getBlockX() + random.nextInt(-range, range);
+        int z = entity.getBlockZ() + random.nextInt(-range, range);
+        //Find floor using the heightmap instead of scanning down from the build limit
+        BlockPos blockpos = new BlockPos(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z), z);
         //Pass nether (or other dimension) roof
         if (blockpos.getY() > 10 && level.getBlockState(blockpos.below()).is(Blocks.BEDROCK)) {
             blockpos = blockpos.below(5);
@@ -173,11 +184,7 @@ public class TeleportUtil {
                 blockpos = blockpos.below();
             }
         }
-        //Return blockPos if safe, or repeat the process
-        return blockpos.getY() == level.getMinY()
-                || level.getBlockState(blockpos.below()).is(Blocks.WATER)
-                || level.getBlockState(blockpos.below()).is(Blocks.LAVA) ?
-                findSafeRTP(level, entity, recursionLeft - 1) : blockpos;
+        return blockpos;
     }
 
     public record TeleportDestination(
