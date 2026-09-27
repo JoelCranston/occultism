@@ -464,8 +464,8 @@ public abstract class StorageControllerGuiBase<T extends StorageControllerContai
     @Override
     public boolean charTyped(CharacterEvent event) {
         if (this.searchBar.isFocused() && this.searchBar.charTyped(event)) {
+            //filtering happens client side, no need to request stacks from the server
             this.state.setSearchText(this.searchBar.getValue());
-            this.actions.requestStacks();
             // OccultismEmiIntegration excluded from build - EMI sync disabled
             if (OccultismJeiIntegration.get().isLoaded() && JeiSettings.isJeiSearchSynced()) {
                 OccultismJeiIntegration.get().setFilterText(this.searchBar.getValue());

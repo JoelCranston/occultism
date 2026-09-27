@@ -24,11 +24,8 @@ package com.klikli_dev.occultism.common.container.storage;
 
 import com.klikli_dev.occultism.common.blockentity.StorageControllerBlockEntity;
 import com.klikli_dev.occultism.common.misc.StorageControllerCraftingInventory;
-import com.klikli_dev.occultism.network.Networking;
-import com.klikli_dev.occultism.network.messages.MessageUpdateLinkedMachines;
 import com.klikli_dev.occultism.registry.OccultismContainers;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
@@ -98,13 +95,6 @@ public class StorageControllerContainer extends StorageControllerContainerBase {
         //close container if block is destroyed
         if (level.getBlockEntity(controllerPosition) != this.storageController)
             return false;
-
-        //send stack updates on a slow tick while interacting
-        if (!level.isClientSide() && level.getGameTime() % 40 == 0) {
-            Networking.sendTo((ServerPlayer) player, this.storageController.getMessageUpdateStacks());
-            Networking.sendTo((ServerPlayer) player,
-                    new MessageUpdateLinkedMachines(this.storageController.getLinkedMachines()));
-        }
 
         //prevent player from interacting with the container if the controller is not in range
         return player.distanceToSqr(controllerPosition.getX() + 0.5D, controllerPosition.getY() + 0.5D,

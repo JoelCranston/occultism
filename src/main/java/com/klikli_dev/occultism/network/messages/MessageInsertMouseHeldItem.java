@@ -94,7 +94,7 @@ public class MessageInsertMouseHeldItem implements IMessage {
             Networking.sendTo(player, new MessageUpdateMouseHeldItem(result));
 
             //update the storage controller
-            Networking.sendTo(player, storageController.getMessageUpdateStacks());
+            container.sendStorageUpdates(player, false);
             player.containerMenu.broadcastChanges();
         }
     }
