@@ -41,7 +41,7 @@ public class OtherworldBlockItem extends BlockItem {
     }
 
     /**
-     * Get the block's description id for use in OtherworldUtil
+     * Get the block's description id
      */
     public String getBlockDescriptionId() {
         return this.getBlock().getDescriptionId();
@@ -50,7 +50,10 @@ public class OtherworldBlockItem extends BlockItem {
     @Override
     public void inventoryTick(ItemStack stack, ServerLevel level, Entity entityIn, @Nullable EquipmentSlot slot) {
         super.inventoryTick(stack, level, entityIn, slot);
-        stack.set(OccultismDataComponents.IS_INVENTORY_ITEM, true);
+        //legacy: this used to be set every tick to show the real block in inventories, which is now determined
+        //client-side by the item model property. Remove it so these stacks stack with freshly dropped items again.
+        if (stack.has(OccultismDataComponents.IS_INVENTORY_ITEM))
+            stack.remove(OccultismDataComponents.IS_INVENTORY_ITEM);
     }
 
 }
