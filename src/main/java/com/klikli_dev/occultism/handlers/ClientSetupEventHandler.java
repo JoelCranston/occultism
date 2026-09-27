@@ -39,6 +39,7 @@ import com.klikli_dev.occultism.client.itemproperties.*;
 import com.klikli_dev.occultism.client.model.entity.*;
 import com.klikli_dev.occultism.client.render.GoldenSacrificialBowlHUD;
 import com.klikli_dev.occultism.client.render.OccultismRenderType;
+import com.klikli_dev.occultism.client.render.OccultismRenderers;
 import com.klikli_dev.occultism.client.render.TeleportTabletHUD;
 import com.klikli_dev.occultism.client.render.blockentity.*;
 import com.klikli_dev.occultism.client.render.entity.*;
@@ -227,8 +228,8 @@ public class ClientSetupEventHandler {
         OccultismGuiStyles.register();
 
         //Register client side event handlers
-        NeoForge.EVENT_BUS.register(Occultism.SELECTED_BLOCK_RENDERER);
-        NeoForge.EVENT_BUS.register(Occultism.THIRD_EYE_EFFECT_RENDERER);
+        NeoForge.EVENT_BUS.register(OccultismRenderers.SELECTED_BLOCK_RENDERER);
+        NeoForge.EVENT_BUS.register(OccultismRenderers.THIRD_EYE_EFFECT_RENDERER);
         NeoForge.EVENT_BUS.addListener((Pre e) -> StorageControllerGuiBase.onScreenMouseClickedPre(e));
 
         //Register Tile Entity Renderers
@@ -279,7 +280,7 @@ public class ClientSetupEventHandler {
 
     @SubscribeEvent
     public static void onRegisterGuiOverlays(RegisterGuiLayersEvent event) {
-        event.registerAboveAll(Identifier.fromNamespaceAndPath(Occultism.MODID, "third_eye"), Occultism.THIRD_EYE_EFFECT_RENDERER);
+        event.registerAboveAll(Identifier.fromNamespaceAndPath(Occultism.MODID, "third_eye"), OccultismRenderers.THIRD_EYE_EFFECT_RENDERER);
         event.registerAbove(VanillaGuiLayers.HOTBAR, Identifier.fromNamespaceAndPath("occultism", "golden_sacrificial_bow_hud"), GoldenSacrificialBowlHUD.get());
         event.registerAbove(VanillaGuiLayers.HOTBAR, Identifier.fromNamespaceAndPath("occultism", "teleport_tablet_hud"), TeleportTabletHUD.get());
     }
