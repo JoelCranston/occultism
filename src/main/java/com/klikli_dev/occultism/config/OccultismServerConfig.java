@@ -123,12 +123,12 @@ public class OccultismServerConfig {
                     builder.comment(
                                     "Maximum distance the Entity Wormhole random teleport (RTP) feature can reach."
                             )
-                            .defineInRange("maxDistanceRTP", 4096, 0, Integer.MAX_VALUE);
+                            .defineInRange("maxDistanceRTP", 4096, 1, Integer.MAX_VALUE);
             this.maxTryRTP =
                     builder.comment(
                                     "Maximum number of attempts to find a safe place for the RTP."
                             )
-                            .defineInRange("maxTryRTP", 99, 0, Integer.MAX_VALUE);
+                            .defineInRange("maxTryRTP", 16, 1, 128);
             this.wormholeTabletCooldown =
                     builder.comment(
                                     "Cooldown when using Wormhole Tablet, in seconds."
