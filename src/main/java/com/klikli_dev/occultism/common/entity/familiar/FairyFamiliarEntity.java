@@ -69,6 +69,7 @@ import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -448,9 +449,15 @@ public class FairyFamiliarEntity extends FamiliarEntity implements FlyingAnimal 
 
         @Override
         public void tick() {
-            for (Entry<UUID, Integer> entry : this.cooldowns.entrySet())
-                if (entry.getValue() > 0)
-                    this.cooldowns.put(entry.getKey(), entry.getValue() - 1);
+            //count down and drop expired cooldowns, so familiars that are gone do not stay in the map forever
+            Iterator<Entry<UUID, Integer>> iterator = this.cooldowns.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Entry<UUID, Integer> entry = iterator.next();
+                if (entry.getValue() <= 1)
+                    iterator.remove();
+                else
+                    entry.setValue(entry.getValue() - 1);
+            }
 
             if (this.fairy.tickCount % 5 != 0)
                 return;
@@ -466,10 +473,7 @@ public class FairyFamiliarEntity extends FamiliarEntity implements FlyingAnimal 
 
             for (Mob familiar : familiars) {
                 UUID id = familiar.getUUID();
-                if (!this.cooldowns.containsKey(id))
-                    this.cooldowns.put(id, 0);
-
-                if (this.cooldowns.get(id) == 0) {
+                if (!this.cooldowns.containsKey(id)) {
                     boolean gaveSupport = familiar.isOnFire()
                             && familiar.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, DURATION));
                     if (familiar.isInWater()
