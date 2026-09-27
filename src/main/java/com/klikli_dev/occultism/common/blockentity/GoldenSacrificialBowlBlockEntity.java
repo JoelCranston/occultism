@@ -82,6 +82,11 @@ import static com.klikli_dev.occultism.common.ritual.Ritual.SACRIFICIAL_BOWL_RAN
 
 public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity {
 
+    /**
+     * The interval in ticks in which an active ritual is fully validated (pentacle and sacrificial bowls).
+     */
+    public static final int RITUAL_VALIDATION_INTERVAL = 20;
+
     public RecipeHolder<RitualRecipe> currentRitualRecipe;
     public Identifier currentRitualRecipeId;
     public UUID castingPlayerId;
@@ -97,6 +102,11 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
     public Consumer<RightClickItem> rightClickItemListener;
     public Consumer<LivingDeathEvent> livingDeathEventListener;
     protected boolean listenersRegistered;
+    /**
+     * The sacrificial bowls found during the last ritual validation, used for cosmetic purposes only.
+     */
+    protected List<SacrificialBowlBlockEntity> cachedSacrificialBowls = List.of();
+    protected long lastValidatedChangeTime = -1;
 
 
     public GoldenSacrificialBowlBlockEntity(BlockPos worldPos, BlockState state) {
@@ -438,11 +448,17 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
                 }
             }
 
-            if (!recipe.value().getRitual().isValid(this.level, this.getBlockPos(), this, this.castingPlayer,
-                    this.itemStackHandler.getResource(0).toStack(), this.remainingAdditionalIngredients)) {
-                //ritual is no longer valid, so interrupt
-                this.stopRitual(false);
-                return;
+            //full validation scans for sacrificial bowls and validates the pentacle, which is expensive,
+            //so we only do it periodically or if the content of this bowl changed.
+            if (this.level.getGameTime() % RITUAL_VALIDATION_INTERVAL == 0 || this.lastValidatedChangeTime != this.lastChangeTime) {
+                this.lastValidatedChangeTime = this.lastChangeTime;
+                if (!recipe.value().getRitual().isValid(this.level, this.getBlockPos(), this, this.castingPlayer,
+                        this.itemStackHandler.getResource(0).toStack(), this.remainingAdditionalIngredients)) {
+                    //ritual is no longer valid, so interrupt
+                    this.stopRitual(false);
+                    return;
+                }
+                this.cachedSacrificialBowls = recipe.value().getRitual().getSacrificialBowls(this.level, this.getBlockPos());
             }
 
             //if we do not have a sacrifice yet, we cannot advance time
@@ -488,7 +504,7 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
             //spawn particles in bowl before consume next item
             if (this.level.getGameTime() % 5 == 0) {
                 if (!this.remainingAdditionalIngredients.isEmpty()) {
-                    recipe.value().getRitual().markNextIngredient(this.level, this.getBlockPos(), this.remainingAdditionalIngredients.getFirst(), this.getTier(this.getBlockState()));
+                    recipe.value().getRitual().markNextIngredient(this.level, this.getBlockPos(), this.cachedSacrificialBowls, this.remainingAdditionalIngredients.getFirst(), this.getTier(this.getBlockState()));
                 } else {
                     double gameTime = this.level.getGameTime() * 0.05;
                     double sin = Math.sin(gameTime) * 0.3;
@@ -781,6 +797,7 @@ public class GoldenSacrificialBowlBlockEntity extends SacrificialBowlBlockEntity
             if (this.remainingAdditionalIngredients != null)
                 this.remainingAdditionalIngredients.clear();
             this.consumedIngredients.clear();
+            this.cachedSacrificialBowls = List.of();
 
             this.unregisterListeners();
             this.ritualActive = false;
