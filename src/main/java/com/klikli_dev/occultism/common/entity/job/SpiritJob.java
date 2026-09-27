@@ -45,6 +45,7 @@ import java.util.List;
 public abstract class SpiritJob {
     public SpiritEntity entity;
     public Identifier factoryId;
+    protected boolean isInitialized;
 
     public SpiritJob(SpiritEntity entity) {
         this.entity = entity;
@@ -75,6 +76,11 @@ public abstract class SpiritJob {
         BrainUtil.setMemory(this.entity, OccultismMemoryTypes.WORK_AREA_SIZE.get(), this.entity.getWorkAreaSize().getValue());
         BrainUtil.setMemory(this.entity, OccultismMemoryTypes.DEPOSIT_POSITION.get(), this.entity.getDepositPosition().orElse(null));
         BrainUtil.setMemory(this.entity, OccultismMemoryTypes.DEPOSIT_FACING.get(), this.entity.getDepositFacing());
+
+        //only set up goals etc. once, even if init is called multiple times
+        if (this.isInitialized)
+            return;
+        this.isInitialized = true;
         this.onInit();
     }
 

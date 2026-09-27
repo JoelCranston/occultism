@@ -46,7 +46,7 @@ public class SummonSpiritWithJobRitual extends SummonRitual {
 
         if (living instanceof SpiritEntity spirit) {
             SpiritJob job = OccultismSpiritJobs.REGISTRY.get(this.recipe.getSpiritJobType()).orElseThrow().value().create(spirit);
-            job.init();
+            //the spirit initializes the job on its first tick
             spirit.setJob(job);
         }
     }
