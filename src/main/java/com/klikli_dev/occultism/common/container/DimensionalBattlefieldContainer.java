@@ -29,6 +29,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.Tags;
@@ -62,6 +63,7 @@ public class DimensionalBattlefieldContainer extends AbstractContainerMenu {
         this.setupButcherInventory();
         this.setupPlayerInventorySlots(playerInventory.player);
         this.setupPlayerHotbar(playerInventory.player);
+        this.setupDataSlots();
     }
 
     @Override
@@ -120,6 +122,61 @@ public class DimensionalBattlefieldContainer extends AbstractContainerMenu {
         int hotbarLeft = 8;
         for (int i = 0; i < 9; i++)
             this.addSlot(new Slot(player.getInventory(), i, hotbarLeft + i * 18, hotbarTop));
+    }
+
+    /**
+     * Syncs the fight progress to the client block entity while the menu is open.
+     * Data slots are only synced as shorts, so each int is split into its lower and upper 16 bits.
+     */
+    protected void setupDataSlots() {
+        this.addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return DimensionalBattlefieldContainer.this.otherworldButcher.mobHealth & 0xFFFF;
+            }
+
+            @Override
+            public void set(int value) {
+                var butcher = DimensionalBattlefieldContainer.this.otherworldButcher;
+                butcher.mobHealth = (butcher.mobHealth & 0xFFFF0000) | (value & 0xFFFF);
+            }
+        });
+        this.addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return (DimensionalBattlefieldContainer.this.otherworldButcher.mobHealth >>> 16) & 0xFFFF;
+            }
+
+            @Override
+            public void set(int value) {
+                var butcher = DimensionalBattlefieldContainer.this.otherworldButcher;
+                butcher.mobHealth = (butcher.mobHealth & 0xFFFF) | ((value & 0xFFFF) << 16);
+            }
+        });
+        this.addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return DimensionalBattlefieldContainer.this.otherworldButcher.maxMobLife & 0xFFFF;
+            }
+
+            @Override
+            public void set(int value) {
+                var butcher = DimensionalBattlefieldContainer.this.otherworldButcher;
+                butcher.maxMobLife = (butcher.maxMobLife & 0xFFFF0000) | (value & 0xFFFF);
+            }
+        });
+        this.addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return (DimensionalBattlefieldContainer.this.otherworldButcher.maxMobLife >>> 16) & 0xFFFF;
+            }
+
+            @Override
+            public void set(int value) {
+                var butcher = DimensionalBattlefieldContainer.this.otherworldButcher;
+                butcher.maxMobLife = (butcher.maxMobLife & 0xFFFF) | ((value & 0xFFFF) << 16);
+            }
+        });
     }
 
     protected void setupButcherInventory() {
