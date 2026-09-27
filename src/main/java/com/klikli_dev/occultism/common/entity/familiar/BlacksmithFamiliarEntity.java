@@ -145,10 +145,12 @@ public class BlacksmithFamiliarEntity extends FamiliarEntity {
     @Override
     public void tick() {
         super.tick();
-        if (this.hasBlacksmithUpgrade() && this.getOwner() instanceof Player player
+        //cheap checks first, the owner lookup and ability check are more expensive
+        if (this.hasBlacksmithUpgrade() && this.level() instanceof ServerLevel serverLevel
+                && serverLevel.getGameTime() % Occultism.SERVER_CONFIG.familiar.blacksmithFamiliarPassiveRepairDelay.getAsInt() == 0
+                && this.getOwner() instanceof Player player
                 && this.distanceToSqr(player) < 64
-                && this.isAbilityEnabled(player) && player.level() instanceof ServerLevel serverLevel
-                && serverLevel.getGameTime() % Occultism.SERVER_CONFIG.familiar.blacksmithFamiliarPassiveRepairDelay.getAsInt() == 0) {
+                && this.isAbilityEnabled(player)) {
             repairEquipment(player, serverLevel);
         }
     }
@@ -285,8 +287,15 @@ public class BlacksmithFamiliarEntity extends FamiliarEntity {
 
         @Override
         public boolean canUse() {
+            //cheap checks first, only search for targets if we could upgrade them
+            if (this.blacksmith.ironCount < UPGRADE_COST.get())
+                return false;
+            if (this.cooldown >= 0) {
+                this.cooldown--;
+                return false;
+            }
             this.target = this.findTarget();
-            return this.blacksmith.ironCount >= UPGRADE_COST.get() && this.target != null && this.cooldown-- < 0;
+            return this.target != null;
         }
 
         @Override
@@ -356,8 +365,15 @@ public class BlacksmithFamiliarEntity extends FamiliarEntity {
 
         @Override
         public boolean canUse() {
+            //cheap checks first, only search for targets if we could upgrade them
+            if (!this.blacksmith.hasIesniumUpgrade() || this.blacksmith.iesniumCount < IESNIUM_COST.get())
+                return false;
+            if (this.cooldown >= 0) {
+                this.cooldown--;
+                return false;
+            }
             this.target = this.findTarget();
-            return this.blacksmith.hasIesniumUpgrade() && this.blacksmith.iesniumCount >= IESNIUM_COST.get() && this.target != null && this.cooldown-- < 0;
+            return this.target != null;
         }
 
         @Override
