@@ -777,6 +777,9 @@ public abstract class Ritual {
                     auto = false;
                 }
             }
+            //only one flame per ritual, same as the result only goes into one catcher
+            if (!auto)
+                break;
         }
         if (auto)
             this.dropResult(level, goldenBowlPosition, blockEntity, castingPlayer, flame, false);
