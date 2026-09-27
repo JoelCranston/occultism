@@ -368,10 +368,13 @@ public class BeholderFamiliarEntity extends ColoredFamiliarEntity {
         private Vec3 lookPos;
         private EyeTarget eyeTarget;
         private int shotTimer;
+        private boolean initialized;
 
         private Eye(double x, double y, double z) {
             this.pos = new Vec3(x, y, z);
-            this.init();
+            //the eyes are only used on the client, so the target is selected lazily on the first client tick
+            //instead of searching for entities whenever a beholder is constructed (also on the server and when loaded from a curio)
+            this.lookPos = this.lookPos0 = Vec3.ZERO;
         }
 
         public void prepareShot(int id) {
@@ -380,7 +383,9 @@ public class BeholderFamiliarEntity extends ColoredFamiliarEntity {
         }
 
         private void init() {
-            this.selectEyeTarget();
+            this.initialized = true;
+            if (this.eyeTarget == null)
+                this.selectEyeTarget();
             Vec3 targetPos = this.eyeTarget.getEyeTarget();
             if (targetPos != null)
                 this.lookPos = targetPos;
@@ -407,6 +412,9 @@ public class BeholderFamiliarEntity extends ColoredFamiliarEntity {
         }
 
         private void tick() {
+            if (!this.initialized)
+                this.init();
+
             this.lookPos0 = this.lookPos;
             if (this.needNewEyeTarget() && this.shotTimer == 0)
                 this.selectEyeTarget();
