@@ -229,19 +229,19 @@ public class OccultismServerConfig {
 
             this.dayTimeToCast = builder.comment(
                             "The time in ticks it takes to cast the day time ritual.")
-                    .defineInRange("dayTimeToCast", 20 * 5, 0, Integer.MAX_VALUE);
+                    .defineInRange("dayTimeToCast", 20 * 5, 1, Integer.MAX_VALUE);
             this.nightTimeToCast = builder.comment(
                             "The time in ticks it takes to cast the night time ritual.")
-                    .defineInRange("nightTimeToCast", 20 * 5, 0, Integer.MAX_VALUE);
+                    .defineInRange("nightTimeToCast", 20 * 5, 1, Integer.MAX_VALUE);
             this.rainTimeToCast = builder.comment(
                             "The time in ticks it takes to cast the rain ritual.")
-                    .defineInRange("rainTimeToCast", 20 * 10, 0, Integer.MAX_VALUE);
+                    .defineInRange("rainTimeToCast", 20 * 10, 1, Integer.MAX_VALUE);
             this.thunderTimeToCast = builder.comment(
                             "The time in ticks it takes to cast the thunder ritual.")
-                    .defineInRange("thunderTimeToCast", 20 * 15, 0, Integer.MAX_VALUE);
+                    .defineInRange("thunderTimeToCast", 20 * 15, 1, Integer.MAX_VALUE);
             this.clearWeatherTimeToCast = builder.comment(
                             "The time in ticks it takes to cast the clear weather ritual.")
-                    .defineInRange("clearWeatherTimeToCast", 20 * 5, 0, Integer.MAX_VALUE);
+                    .defineInRange("clearWeatherTimeToCast", 20 * 5, 1, Integer.MAX_VALUE);
 
             builder.pop();
         }
@@ -267,7 +267,7 @@ public class OccultismServerConfig {
                                 .defineInRange("outputMultiplier", outputMultiplier, 0.0, Integer.MAX_VALUE);
                 this.operationCount =
                         builder.comment("Max number of recipes that " + spirit + " make per operation.")
-                                .defineInRange("operationCount", operationCount, 0, 64);
+                                .defineInRange("operationCount", operationCount, 1, 64);
 
                 builder.pop();
             }
@@ -286,7 +286,7 @@ public class OccultismServerConfig {
                                 .defineInRange("timeMultiplier", timeMultiplier, 0.0, Integer.MAX_VALUE);
                 this.operationCount =
                         builder.comment("Max number of recipes that " + spirit + " make per operation.")
-                                .defineInRange("operationCount", operationCount, 0, 64);
+                                .defineInRange("operationCount", operationCount, 1, 64);
 
                 builder.pop();
             }
@@ -305,7 +305,7 @@ public class OccultismServerConfig {
                                 .defineInRange("operationTimer", operationTimer, 0, Integer.MAX_VALUE);
                 this.operationCount =
                         builder.comment("Max number of recipes that" + spirit + "make per operation.")
-                                .defineInRange("operationCount", operationCount, 0, 64);
+                                .defineInRange("operationCount", operationCount, 1, 64);
 
                 builder.pop();
             }
@@ -343,11 +343,11 @@ public class OccultismServerConfig {
 
             this.greedySearchRange = builder.comment(
                             "The horizontal value that the upgraded greedy familiar will seek blocks. (Large distances can cause delays in finding)")
-                    .defineInRange("greedySearchRange", 32, 0, Integer.MAX_VALUE);
+                    .defineInRange("greedySearchRange", 32, 1, 256);
 
             this.greedyVerticalSearchRange = builder.comment(
                             "The vertical value that the upgraded greedy familiar will seek blocks. (Large distances can cause delays in finding)")
-                    .defineInRange("greedyVerticalSearchRange", 16, 0, Integer.MAX_VALUE);
+                    .defineInRange("greedyVerticalSearchRange", 16, 1, 256);
 
             builder.pop();
         }

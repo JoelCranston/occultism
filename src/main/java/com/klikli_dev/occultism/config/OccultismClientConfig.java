@@ -202,7 +202,7 @@ public class OccultismClientConfig {
                     "How many rows show at one time on storage controller"
             ).defineInRange("storageRows", 4, 1, 9);
             this.divinationRodScanRange = builder.comment("The scan range in blocks for the divination rod. Too high might cause lags")
-                    .defineInRange("divinationRodScanRange", 129, 1, Integer.MAX_VALUE);
+                    .defineInRange("divinationRodScanRange", 129, 1, 192);
             this.disableSpiritFireSuccessSound = builder.comment(
                             "Disables the sound played when a spirit fire successfully crafted an item."
                     )
