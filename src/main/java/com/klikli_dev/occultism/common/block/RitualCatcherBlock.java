@@ -92,6 +92,7 @@ public class RitualCatcherBlock extends OtherstoneFrameBlock implements EntityBl
                             } else {
                                 //and if not, just put it in the inventory
                                 ItemTransferUtil.giveItemToPlayer(pPlayer, extracted, tx);
+                                tx.commit();
                             }
                             pLevel.playSound(null, pPos, SoundEvents.ITEM_FRAME_REMOVE_ITEM, SoundSource.BLOCKS, 1, 1);
                         }
