@@ -94,9 +94,13 @@ public class MessageSetRecipeByID implements IMessage {
                 continue;
             }
 
+            //the slot is occupied (e.g. clearing the matrix failed), extracting now would void the item
+            if (!craftMatrix.getItem(slot).isEmpty())
+                continue;
+
             //if we did not find anything in the player inventory, get it from the network now
             extractedStack = storageController.getOneOfMostCommonItem(ingredient, false);
-            if (!extractedStack.isEmpty() && craftMatrix.getItem(slot).isEmpty()) {
+            if (!extractedStack.isEmpty()) {
                 //if extraction was successful, place it in the matrix
                 craftMatrix.setItem(slot, extractedStack);
                 continue;
