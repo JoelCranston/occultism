@@ -26,6 +26,7 @@ import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
 import com.klikli_dev.occultism.api.common.blockentity.IStorageControllerProxy;
 import com.klikli_dev.occultism.api.common.data.MachineReference;
 import com.klikli_dev.occultism.common.entity.ai.BlockSorter;
+import com.klikli_dev.occultism.common.entity.ai.StorageProxySearch;
 import com.klikli_dev.occultism.common.entity.job.ManageMachineJob;
 import com.klikli_dev.occultism.common.entity.spirit.SpiritEntity;
 import com.klikli_dev.occultism.common.misc.DepositOrder;
@@ -40,17 +41,16 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.capabilities.Capabilities.Item;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
-import java.util.stream.Stream;
 
 public class ManageMachineGoal extends Goal {
+    protected static final int STORAGE_ACCESSOR_SEARCH_COOLDOWN = 100;
     protected final SpiritEntity entity;
     protected final BlockSorter targetSorter;
     protected BlockPos targetBlock = null;
     protected BlockEntity cachedStorageAccessor;
     protected DepositOrder cachedStorageAccessorOrder;
+    protected long nextStorageAccessorSearchTime;
     protected ManageMachineJob job;
 
     public ManageMachineGoal(SpiritEntity entity, ManageMachineJob job) {
@@ -215,31 +215,21 @@ public class ManageMachineGoal extends Goal {
             return this.cachedStorageAccessor;
 
         Level level = this.entity.level();
-        List<BlockPos> allBlocks = new ArrayList<>();
+        //if the last search for this order found nothing, wait a bit before searching again
+        if (this.cachedStorageAccessor == null && this.cachedStorageAccessorOrder == this.job.getCurrentDepositOrder() &&
+                level.getGameTime() < this.nextStorageAccessorSearchTime)
+            return null;
+
         BlockPos machinePosition = this.job.getManagedMachine().insertGlobalPos.getPos();
 
         //get work area, but only half height, we don't need full.
         int workAreaSize = this.entity.getWorkAreaSize().getValue();
-        Stream<BlockPos> searchBlocks = BlockPos.betweenClosedStream(
-                machinePosition.offset(-workAreaSize, -workAreaSize / 2, -workAreaSize),
-                machinePosition.offset(workAreaSize, workAreaSize / 2, workAreaSize));
-        searchBlocks.forEachOrdered(pos -> {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (blockEntity instanceof IStorageControllerProxy proxy) {
-                if (proxy.getLinkedStorageControllerPosition() != null &&
-                        proxy.getLinkedStorageControllerPosition().equals(this.job.getStorageControllerPosition()))
-                    allBlocks.add(pos.immutable());
-            }
-        });
-
-        //set closest log as target
-        if (!allBlocks.isEmpty()) {
-            allBlocks.sort(this.targetSorter);
-            this.cachedStorageAccessor = level.getBlockEntity(allBlocks.get(0));
-            this.cachedStorageAccessorOrder = this.job.getCurrentDepositOrder();
-            return this.cachedStorageAccessor;
-        }
-        return null;
+        this.cachedStorageAccessor = StorageProxySearch.findClosestLinkedProxy(level, machinePosition,
+                workAreaSize, workAreaSize / 2, this.job.getStorageControllerPosition(), this.targetSorter);
+        this.cachedStorageAccessorOrder = this.job.getCurrentDepositOrder();
+        if (this.cachedStorageAccessor == null)
+            this.nextStorageAccessorSearchTime = level.getGameTime() + STORAGE_ACCESSOR_SEARCH_COOLDOWN;
+        return this.cachedStorageAccessor;
     }
 
     private boolean startTargetingStorageController(DepositOrder depositOrder, MachineReference machineReference,
