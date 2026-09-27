@@ -44,9 +44,12 @@ import java.util.Optional;
 
 public class DepositItemsGoal extends PausableGoal {
 
+    protected static final int REPATH_INTERVAL = 10;
+
     protected final SpiritEntity entity;
     protected final BlockSorter targetSorter;
     protected IMoveTarget moveTarget = null;
+    protected long nextRepathTime;
 
     public DepositItemsGoal(SpiritEntity entity) {
         this.entity = entity;
@@ -84,6 +87,11 @@ public class DepositItemsGoal extends PausableGoal {
         return !this.isPaused() && this.moveTarget != null && !this.entity.getItemInHand(InteractionHand.MAIN_HAND).isEmpty();
     }
 
+    @Override
+    public void start() {
+        this.nextRepathTime = 0;
+    }
+
     public void stop() {
         this.entity.getNavigation().stop();
         this.resetTarget();
@@ -107,8 +115,9 @@ public class DepositItemsGoal extends PausableGoal {
                 if (distance < accessDistance) {
                     //stop moving while taking out
                     this.entity.getNavigation().stop();
-                } else {
-                    //continue moving
+                } else if (this.entity.level().getGameTime() >= this.nextRepathTime) {
+                    //continue moving, but only recalculate the path every few ticks
+                    this.nextRepathTime = this.entity.level().getGameTime() + REPATH_INTERVAL;
                     BlockPos moveTarget = this.getMoveTarget();
                     this.entity.getNavigation().moveTo(this.entity.getNavigation().createPath(moveTarget, 0), 1.0f);
                 }
@@ -190,11 +199,18 @@ public class DepositItemsGoal extends PausableGoal {
         //check a target block
         Optional<BlockPos> targetPos = this.entity.getDepositPosition();
         targetPos.ifPresent((pos) -> {
+            //do not load chunks to validate the target, wait until it is loaded instead
+            if (!this.entity.level().hasChunkAt(pos)) {
+                this.moveTarget = null;
+                return;
+            }
+
             this.moveTarget = new BlockPosMoveTarget(this.entity.level(), pos);
             var handler = this.entity.level().getCapability(Item.BLOCK, this.moveTarget.getBlockPos(), this.entity.getDepositFacing());
             if (handler == null) {
                 //the deposit block is not valid for depositing, so we disable this to allow exiting this task.
                 this.entity.setDepositPosition(null);
+                this.moveTarget = null;
             }
         });
         //also check a target entity -> its mutually exclusive with block, ensured by spirit entity
