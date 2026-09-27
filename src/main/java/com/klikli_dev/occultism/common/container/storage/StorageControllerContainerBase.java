@@ -26,6 +26,7 @@ import com.klikli_dev.occultism.TranslationKeys;
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
 import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
 import com.klikli_dev.occultism.api.common.data.GlobalBlockPos;
+import com.klikli_dev.occultism.api.common.data.MachineReference;
 import com.klikli_dev.occultism.client.gui.storage.ClientStorageCache;
 import com.klikli_dev.occultism.common.container.storage.layout.StorageMenuLayout;
 import com.klikli_dev.occultism.common.container.storage.layout.StorageMenuLayouts;
@@ -35,6 +36,8 @@ import com.klikli_dev.occultism.common.misc.StorageControllerCraftingInventory;
 import com.klikli_dev.occultism.common.misc.StorageControllerSlot;
 import com.klikli_dev.occultism.crafting.recipe.PasteRepairItemRecipe;
 import com.klikli_dev.occultism.network.Networking;
+import com.klikli_dev.occultism.network.messages.MessageUpdateLinkedMachines;
+import com.klikli_dev.occultism.network.messages.MessageUpdateStacks;
 import com.klikli_dev.occultism.util.ItemTransferUtil;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.ChatFormatting;
@@ -64,6 +67,14 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
      * Hack to only allow one player to open a container at a time.
      */
     public static ConcurrentMap<BlockPos, UUID> openContainers = new ConcurrentHashMap<>();
+    /**
+     * Interval in ticks in which storage changes are synced to the open menu.
+     */
+    protected static final int STORAGE_UPDATE_INTERVAL = 20;
+    /**
+     * Minimum interval in ticks between two forced (client requested) storage updates.
+     */
+    protected static final int STORAGE_REQUEST_MIN_INTERVAL = 10;
     public Inventory playerInventory;
     public Player player;
     protected ResultContainer result;
@@ -75,6 +86,14 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
      * used to lock recipe while crafting
      */
     protected boolean recipeLocked = false;
+    /**
+     * The last stack update sent to the player. The storage controller caches this message until its contents change,
+     * so we can use identity to only resend stacks if something changed.
+     */
+    protected MessageUpdateStacks lastSentStacks;
+    protected int lastSentLinkedMachinesHash;
+    protected boolean linkedMachinesSent;
+    protected long lastForcedStorageUpdateTime = Long.MIN_VALUE;
 
     protected StorageControllerContainerBase(@Nullable MenuType<?> type, int id, Inventory playerInventory) {
         super(type, id);
@@ -158,6 +177,62 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
     }
 
     @Override
+    public void broadcastChanges() {
+        super.broadcastChanges();
+
+        //broadcastChanges is called every tick while the menu is open, we use a slow tick to sync storage changes (e.g. by machines).
+        //the menu has to be the open menu, otherwise the client has no screen for the stacks yet (e.g. during construction).
+        if (this.player instanceof ServerPlayer serverPlayer && serverPlayer.containerMenu == this
+                && serverPlayer.level().getGameTime() % STORAGE_UPDATE_INTERVAL == 0) {
+            this.sendStorageUpdates(serverPlayer, false);
+        }
+    }
+
+    /**
+     * Sends the storage stacks and linked machines to the player, but only if they changed since the last send.
+     *
+     * @param player the player to send to.
+     * @param force  true to send even if nothing changed.
+     */
+    public void sendStorageUpdates(ServerPlayer player, boolean force) {
+        IStorageController storageController = this.getStorageController();
+        if (storageController == null)
+            return;
+
+        MessageUpdateStacks stacks = storageController.getMessageUpdateStacks();
+        if (force || stacks != this.lastSentStacks) {
+            this.lastSentStacks = stacks;
+            Networking.sendTo(player, stacks);
+        }
+
+        Map<GlobalBlockPos, MachineReference> linkedMachines = storageController.getLinkedMachines();
+        int linkedMachinesHash = linkedMachines.hashCode();
+        if (force || !this.linkedMachinesSent || linkedMachinesHash != this.lastSentLinkedMachinesHash) {
+            this.linkedMachinesSent = true;
+            this.lastSentLinkedMachinesHash = linkedMachinesHash;
+            Networking.sendTo(player, new MessageUpdateLinkedMachines(linkedMachines));
+        }
+    }
+
+    /**
+     * Handles a client request for a full storage update. Requests are rate limited, a limited request is
+     * served by the next slow tick update instead.
+     *
+     * @param player the player requesting the update.
+     */
+    public void requestStorageUpdate(ServerPlayer player) {
+        long gameTime = player.level().getGameTime();
+        if (gameTime - this.lastForcedStorageUpdateTime < STORAGE_REQUEST_MIN_INTERVAL) {
+            //mark as not sent, so the next slow tick update sends everything
+            this.lastSentStacks = null;
+            this.linkedMachinesSent = false;
+            return;
+        }
+        this.lastForcedStorageUpdateTime = gameTime;
+        this.sendStorageUpdates(player, true);
+    }
+
+    @Override
     public void slotsChanged(Container inventoryIn) {
         if (this.recipeLocked) {
             //only allow matrix changes while we are not crafting
@@ -202,7 +277,7 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
                 this.broadcastChanges();
 
                 //get updated stacks from storage controller and send to client
-                Networking.sendTo((ServerPlayer) player, storageController.getMessageUpdateStacks());
+                this.sendStorageUpdates((ServerPlayer) player, false);
 
                 if (!remainingItemStack.isEmpty()) {
                     slot.onTake(player, slotStack);
@@ -483,7 +558,7 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
 
         //update crafting matrix to handle container items / items that survive crafting
         this.slotsChanged(this.matrix);
-        Networking.sendTo((ServerPlayer) player, this.getStorageController().getMessageUpdateStacks());
+        this.sendStorageUpdates((ServerPlayer) player, false);
 
     }
 
