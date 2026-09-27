@@ -23,7 +23,6 @@
 
 package com.klikli_dev.occultism.network.messages;
 
-import com.google.common.base.Preconditions;
 import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
 import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
@@ -48,6 +47,11 @@ import net.neoforged.neoforge.transfer.item.PlayerInventoryWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 public class MessageSetRecipeByTemplate implements IMessage {
 
     public static final Identifier ID = Identifier.fromNamespaceAndPath(Occultism.MODID, "set_recipe_by_template");
@@ -57,6 +61,8 @@ public class MessageSetRecipeByTemplate implements IMessage {
     private @Nullable Identifier recipeId;
     private NonNullList<ItemStack> ingredientTemplates;
     private int recipeAmount;
+
+    private static final int MAX_RECIPE_AMOUNT = 64;
 
     public MessageSetRecipeByTemplate(RegistryFriendlyByteBuf buf) {
         this.decode(buf);
@@ -89,10 +95,11 @@ public class MessageSetRecipeByTemplate implements IMessage {
         for (int i = 0; i < recipeAmount; i++) {
             boolean anyExtracted = false;
             for (int slot = 0; slot < 9; slot++) {
-                var ingredient = ingredients.get(slot);
-                if (ingredient.isEmpty()) {
+                var ingredientOptional = ingredients.get(slot);
+                if (ingredientOptional.isEmpty()) {
                     continue;
                 }
+                Ingredient ingredient = ingredientOptional.get();
 
                 if (!this.canAcceptIngredient(craftMatrix, slot)) {
                     continue;
@@ -135,7 +142,8 @@ public class MessageSetRecipeByTemplate implements IMessage {
     }
 
     private int sanitizeRecipeAmount(int recipeAmount) {
-        return Math.max(1, recipeAmount);
+        //a crafting slot holds at most a stack, so more than 64 iterations can never fill anything.
+        return Math.clamp(recipeAmount, 1, MAX_RECIPE_AMOUNT);
     }
 
     private boolean canAcceptIngredient(CraftingContainer craftMatrix, int slot) {
@@ -186,7 +194,7 @@ public class MessageSetRecipeByTemplate implements IMessage {
         return TYPE;
     }
 
-    private NonNullList<Ingredient> getDesiredIngredients(Player player) {
+    private List<Optional<Ingredient>> getDesiredIngredients(Player player) {
         // Try to retrieve the real recipe on the server-side
         if (this.recipeId != null) {
             // Access via ServerPlayer's level which has getServer()
@@ -202,14 +210,16 @@ public class MessageSetRecipeByTemplate implements IMessage {
         }
 
         // If the recipe is unavailable for any reason, use the templates provided by the client
-        var ingredients = NonNullList.withSize(9, Ingredient.of());
-        Preconditions.checkArgument(ingredients.size() == this.ingredientTemplates.size(),
-                "Got %d ingredient templates from client, expected %d",
-                this.ingredientTemplates.size(), ingredients.size());
+        List<Optional<Ingredient>> ingredients = new ArrayList<>(Collections.nCopies(9, Optional.empty()));
+        if (this.ingredientTemplates.size() != ingredients.size()) {
+            Occultism.LOGGER.warn("Got {} ingredient templates from client, expected {}",
+                    this.ingredientTemplates.size(), ingredients.size());
+            return ingredients;
+        }
         for (int i = 0; i < ingredients.size(); i++) {
             var template = this.ingredientTemplates.get(i);
             if (!template.isEmpty()) {
-                ingredients.set(i, Ingredient.of(template.getItem()));
+                ingredients.set(i, Optional.of(Ingredient.of(template.getItem())));
             }
         }
 
