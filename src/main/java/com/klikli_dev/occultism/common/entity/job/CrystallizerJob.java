@@ -28,10 +28,7 @@ import com.klikli_dev.occultism.common.entity.job.event.ItemProcessingJobEvent;
 import com.klikli_dev.occultism.common.entity.spirit.SpiritEntity;
 import com.klikli_dev.occultism.crafting.recipe.CrystallizeRecipe;
 import com.klikli_dev.occultism.crafting.recipe.TieredSingleRecipeInput;
-import com.klikli_dev.occultism.registry.OccultismBlocks;
 import com.klikli_dev.occultism.registry.OccultismRecipes;
-import com.klikli_dev.occultism.util.ItemTransferUtil;
-import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -45,12 +42,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.capabilities.Capabilities.Item;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.transfer.ResourceHandler;
-import net.neoforged.neoforge.transfer.item.ItemResource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,8 +69,6 @@ public class CrystallizerJob extends FilterableProcessingSpiritJob {
     protected PickupItemsGoal pickupItemsGoal;
 
     protected List<Ingredient> itemsToPickUp = new ArrayList<>();
-    private ResourceHandler<ItemResource> handlerBelow = null;
-    private BlockState cachedStateBelow = null;
 
     public CrystallizerJob(SpiritEntity entity, Supplier<Float> crystallizeTimeMultiplier, Supplier<Float> outputMultiplier, Supplier<Integer> operationCount, Supplier<Integer> tier) {
         super(entity);
@@ -179,22 +170,7 @@ public class CrystallizerJob extends FilterableProcessingSpiritJob {
                     var event = new CrystallizerJobEvent(this.entity, inputCopy, result);
                     NeoForge.EVENT_BUS.post(event);
                     if (!event.getResult().isEmpty()) {
-                        boolean flag = true;
-                        if (level.getBlockState(this.entity.blockPosition().below()).is(OccultismBlocks.DIMENSIONAL_EXTRACTOR)) {
-                            if (this.cachedStateBelow != level.getBlockState(this.entity.blockPosition().below(2)))
-                                this.updateBelowBlock();
-                            if (this.handlerBelow != null) {
-                                ItemTransferUtil.insertItemStacked(this.handlerBelow, event.getResult(), false);
-                                flag = false;
-                            }
-
-                        }
-                        if (flag) {
-                            ItemEntity droppedItem = this.entity.spawnAtLocation((ServerLevel) level, event.getResult());
-                            if (droppedItem != null) {
-                                droppedItem.addTag(DROPPED_BY_CRYSTALLIZER);
-                            }
-                        }
+                        this.outputProcessingResult(event.getResult(), DROPPED_BY_CRYSTALLIZER);
                     }
                     //Don't reset recipe here, keep it cached
                 }
@@ -237,12 +213,6 @@ public class CrystallizerJob extends FilterableProcessingSpiritJob {
      */
     public void onCrystallize(ItemStack input, ItemStack output) {
 
-    }
-
-    public void updateBelowBlock() {
-        this.cachedStateBelow = this.entity.level().getBlockState(this.entity.blockPosition().below(2));
-        this.handlerBelow = this.entity.level().getCapability(Item.BLOCK,
-                this.entity.blockPosition().below(2), this.cachedStateBelow, null, Direction.UP);
     }
 
     public static class CrystallizerJobEvent extends ItemProcessingJobEvent {
