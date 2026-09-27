@@ -140,6 +140,18 @@ public abstract class StorageControllerContainerBase extends AbstractContainerMe
                 (BlockEntity) this.getStorageController());
     }
 
+    public boolean isRecipeLocked() {
+        return this.recipeLocked;
+    }
+
+    /**
+     * Locks the recipe, while locked matrix changes do not trigger recipe lookups.
+     * Callers must unlock and call slotsChanged(matrix) once they are done.
+     */
+    public void setRecipeLocked(boolean recipeLocked) {
+        this.recipeLocked = recipeLocked;
+    }
+
     @Override
     public CraftingContainer getCraftMatrix() {
         return this.matrix;
