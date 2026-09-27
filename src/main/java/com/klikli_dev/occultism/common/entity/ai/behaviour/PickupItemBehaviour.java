@@ -8,7 +8,6 @@ import com.klikli_dev.occultism.util.Math3DUtil;
 import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.behavior.EntityTracker;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
@@ -35,6 +34,12 @@ public class PickupItemBehaviour<E extends SpiritEntity> extends ExtendedBehavio
     @Override
     protected boolean checkExtraStartConditions(@NotNull ServerLevel level, @NotNull E entity) {
         var jobItem = BrainUtil.getMemory(entity, MemoryModuleType.NEAREST_VISIBLE_WANTED_ITEM);
+        if (jobItem == null || !jobItem.isAlive()) {
+            //item was picked up or despawned meanwhile, forget it so the sensor can look for a new one
+            BrainUtil.clearMemory(entity, MemoryModuleType.NEAREST_VISIBLE_WANTED_ITEM);
+            return false;
+        }
+
         return Math3DUtil.withinAxisDistances(entity.position(), jobItem.position(),
                 PickupItemBehaviour.PICKUP_XZ_RANGE_SQUARE,
                 PickupItemBehaviour.PICKUP_Y_RANGE,
@@ -47,6 +52,10 @@ public class PickupItemBehaviour<E extends SpiritEntity> extends ExtendedBehavio
 
     protected void start(E entity) {
         var jobItem = BrainUtil.getMemory(entity, MemoryModuleType.NEAREST_VISIBLE_WANTED_ITEM);
+        if (jobItem == null || !jobItem.isAlive()) {
+            BrainUtil.clearMemory(entity, MemoryModuleType.NEAREST_VISIBLE_WANTED_ITEM);
+            return;
+        }
 
         BrainUtil.setMemory(entity, MemoryModuleType.LOOK_TARGET, new EntityTracker(jobItem, false));
         ItemStack duplicate = jobItem.getItem().copy();
@@ -55,9 +64,13 @@ public class PickupItemBehaviour<E extends SpiritEntity> extends ExtendedBehavio
             ItemStack remaining = ItemTransferUtil.insertItemStacked(handler, duplicate, false);
             jobItem.getItem().setCount(remaining.getCount());
         }
-        for (ItemEntity e : entity.level().getEntitiesOfClass(ItemEntity.class, jobItem.getBoundingBox().inflate(3), Entity::isAlive)) {
-            if (ItemTransferUtil.insertItemStacked(handler, e.getItem().copy(), true).getCount() <= 64) {
-                ItemStack remains = ItemTransferUtil.insertItemStacked(handler, e.getItem().copy(), false);
+
+        //also pick up nearby items the job wants, as long as we have space for (some of) them
+        for (ItemEntity e : entity.level().getEntitiesOfClass(ItemEntity.class, jobItem.getBoundingBox().inflate(3),
+                candidate -> candidate.isAlive() && !candidate.getItem().isEmpty() && entity.canPickupItem(candidate))) {
+            ItemStack stack = e.getItem().copy();
+            if (ItemTransferUtil.insertItemStacked(handler, stack, true).getCount() < stack.getCount()) {
+                ItemStack remains = ItemTransferUtil.insertItemStacked(handler, stack, false);
                 e.getItem().setCount(remains.getCount());
             }
         }
