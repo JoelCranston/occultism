@@ -250,16 +250,18 @@ public class PlayerEventHandler {
         ItemStack tablet = CuriosUtil.getXpTablet(player);
         if (tablet.isEmpty())
             return false;
-        int xpProgress = orb.getValue();
-        int storeXP = ItemNBTUtil.getStoredXP(tablet);
-        if (storeXP + xpProgress >= 0) {
-            storeXP += xpProgress;
-            ItemNBTUtil.setStoredXP(tablet, storeXP);
+        //merged orbs carry count * value xp, the orb is discarded below so all of it has to be stored
+        long xpProgress = (long) orb.getValue() * Math.max(orb.count, 1);
+        long storeXP = (long) ItemNBTUtil.getStoredXP(tablet) + xpProgress;
+        if (storeXP <= Integer.MAX_VALUE) {
+            ItemNBTUtil.setStoredXP(tablet, (int) storeXP);
             orb.discard();
             return true;
         } else {
+            //tablet is full, store as much as possible and leave the remainder in the orb
             ItemNBTUtil.setStoredXP(tablet, Integer.MAX_VALUE);
-            orb.setValue(storeXP + xpProgress - Integer.MAX_VALUE);
+            orb.count = 1;
+            orb.setValue((int) Math.min(storeXP - Integer.MAX_VALUE, Integer.MAX_VALUE));
             return false;
         }
     }
