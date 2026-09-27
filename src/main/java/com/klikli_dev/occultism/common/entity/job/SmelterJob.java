@@ -210,7 +210,7 @@ public class SmelterJob extends FilterableProcessingSpiritJob {
     }
 
     private void commonFinish(ItemStack handHeld, ItemStack result, Level level) {
-        int a = Math.min(this.operationCount.get(), handHeld.getCount());
+        int a = Math.min(Math.max(1, this.operationCount.get()), handHeld.getCount());
         result.setCount((result.getCount() * a));
         ItemStack inputCopy = handHeld.copy();
         inputCopy.setCount(a);
