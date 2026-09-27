@@ -25,8 +25,6 @@ package com.klikli_dev.occultism.common.item.storage;
 import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.common.container.tablet.TabletInventory;
 import com.klikli_dev.occultism.common.container.tablet.TeleportTabletContainer;
-import com.klikli_dev.occultism.network.Networking;
-import com.klikli_dev.occultism.network.messages.MessageSetContents;
 import com.klikli_dev.occultism.util.ItemNBTUtil;
 import com.klikli_dev.occultism.util.TeleportUtil;
 import com.klikli_dev.occultism.util.TextUtil;
@@ -92,7 +90,7 @@ public class TeleportTabletItem extends Item {
                     if (transition == null)
                         return InteractionResult.FAIL;
 
-                    if (compass.getOrDefault(DataComponents.CUSTOM_NAME, "") != "BACK") {
+                    if (!compass.getOrDefault(DataComponents.CUSTOM_NAME, Component.empty()).getString().equals("BACK")) {
                         boolean checking = true;
                         NonNullList<ItemStack> items = NonNullList.create();
                         for (int i = 0 ; i < contents.getSlots() ; i++) {
@@ -105,7 +103,7 @@ public class TeleportTabletItem extends Item {
                             items.add(back);
                         }
                         if (!checking)
-                            Networking.sendToServer(new MessageSetContents(ItemContainerContents.fromItems(items), hand));
+                            stack.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(items));
                     }
 
                     player.teleport(transition);
