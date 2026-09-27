@@ -112,20 +112,37 @@ public class MessageUpdateStacks implements IMessage {
     }
 
     public void uncompress(RegistryAccess registryAccess) {
-        @SuppressWarnings("resource") Inflater decompressor = new Inflater();
-        decompressor.setInput(this.payload.array());
-
         // Create an expandable packet buffer to hold the decompressed data
         var uncompressed = RegistryFriendlyByteBuf.decorator(registryAccess, ConnectionType.NEOFORGE).apply(new FriendlyByteBuf(Unpooled.buffer(this.payload.readableBytes() * 4)));
 
-        // Decompress the data
-        byte[] buf = new byte[1024];
-        while (!decompressor.finished()) {
-            try {
+        boolean finished;
+        @SuppressWarnings("resource") Inflater decompressor = new Inflater();
+        try {
+            decompressor.setInput(this.payload.array(), this.payload.arrayOffset() + this.payload.readerIndex(), this.payload.readableBytes());
+
+            // Decompress the data
+            byte[] buf = new byte[1024];
+            while (!decompressor.finished()) {
                 int count = decompressor.inflate(buf);
+                if (count == 0 && (decompressor.needsInput() || decompressor.needsDictionary())) {
+                    //truncated or invalid data, we cannot make any more progress.
+                    Occultism.LOGGER.warn("Received incomplete storage stack data, ignoring it.");
+                    break;
+                }
                 uncompressed.writeBytes(buf, 0, count);
-            } catch (Exception _) {
             }
+            finished = decompressor.finished();
+        } catch (Exception e) {
+            Occultism.LOGGER.warn("Failed to decompress storage stack data.", e);
+            this.stacks = new ArrayList<>();
+            return;
+        } finally {
+            decompressor.end();
+        }
+
+        if (!finished) {
+            this.stacks = new ArrayList<>();
+            return;
         }
 
         int stacksSize = uncompressed.readInt();
@@ -143,7 +160,7 @@ public class MessageUpdateStacks implements IMessage {
 
         // Give the compressor the data to compress
         //create buffer with reasonable size (will increase automatically as needed
-        var uncompressed = RegistryFriendlyByteBuf.decorator(registryAccess, ConnectionType.NEOFORGE).apply(new FriendlyByteBuf(Unpooled.buffer(DEFAULT_BUFFER_SIZE * this.stacks.size())));
+        var uncompressed = RegistryFriendlyByteBuf.decorator(registryAccess, ConnectionType.NEOFORGE).apply(new FriendlyByteBuf(Unpooled.buffer(DEFAULT_BUFFER_SIZE)));
         uncompressed.writeInt(this.stacks.size());
 
         for (ItemStack stack : this.stacks) {
@@ -151,16 +168,20 @@ public class MessageUpdateStacks implements IMessage {
             uncompressed.writeInt(stack.getCount());
         }
 
-        compressor.setInput(uncompressed.array(), 0, uncompressed.readableBytes());
-        compressor.finish();
+        try {
+            compressor.setInput(uncompressed.array(), uncompressed.arrayOffset() + uncompressed.readerIndex(), uncompressed.readableBytes());
+            compressor.finish();
 
-
-        this.payload = Unpooled.buffer(DEFAULT_BUFFER_SIZE);
-        // Compress the data
-        byte[] buf = new byte[1024];
-        while (!compressor.finished()) {
-            int count = compressor.deflate(buf);
-            this.payload.writeBytes(buf, 0, count);
+            this.payload = Unpooled.buffer(DEFAULT_BUFFER_SIZE);
+            // Compress the data
+            byte[] buf = new byte[1024];
+            while (!compressor.finished()) {
+                int count = compressor.deflate(buf);
+                this.payload.writeBytes(buf, 0, count);
+            }
+        } finally {
+            //release native resources right away instead of waiting for the GC
+            compressor.end();
         }
     }
 
