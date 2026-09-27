@@ -38,13 +38,10 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class SphericalCaveSubFeature implements IMultiChunkSubFeature {
 
-    public static Set<BlockPos> sphericalCaves = new HashSet<>();
     protected ICaveDecorator caveDecorator;
     protected int radius;
     protected int maxRandomRadiusOffset;
@@ -66,9 +63,6 @@ public class SphericalCaveSubFeature implements IMultiChunkSubFeature {
         //can never generate in daylight
         if (reader.canSeeSkyFromBelowWater(rootPosition))
             return false;
-
-        //Store a list of spherical caves for easy access during development, or future command access.
-        sphericalCaves.add(rootPosition);
 
         ChunkPos rootChunk = ChunkPos.containing(rootPosition);
 
