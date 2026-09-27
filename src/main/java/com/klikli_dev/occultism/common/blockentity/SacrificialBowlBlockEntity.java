@@ -190,8 +190,10 @@ public class SacrificialBowlBlockEntity extends NetworkedBlockEntity implements 
             ) {
                 var stack = resource.toStack(); //creates a copy, safe to modify
                 stack.set(OccultismDataComponents.STORAGE_CONTROLLER_CONTENTS.get(), CustomData.EMPTY);
-                this.itemStackHandler.set(i, ItemResource.of(stack), this.itemStackHandler.getAmountAsInt(i));
+                resource = ItemResource.of(stack);
             }
+            //only modify the copy, never the actual inventory
+            copy.set(i, resource, this.itemStackHandler.getAmountAsInt(i));
         }
 
         copy.serialize(output);
