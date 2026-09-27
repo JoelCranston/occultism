@@ -20,9 +20,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LeavesBlock;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Sets the NEAREST_TREE memory to the closest tree in the work area.
@@ -79,6 +79,10 @@ public class NearestTreeSensor<E extends SpiritEntity> extends ExtendedSensor<E>
         var workAreaCenter = BrainUtil.getMemory(entity, OccultismMemoryTypes.WORK_AREA_CENTER.get());
         var workAreaSize = BrainUtil.getMemory(entity, OccultismMemoryTypes.WORK_AREA_SIZE.get());
 
+        //work area not yet set up (job not initialized), wait for the next scan
+        if (workAreaCenter == null || workAreaSize == null)
+            return;
+
         if (Occultism.DEBUG.debugAI) {
             for (var tree : unreachableTrees) {
                 Networking.sendToTracking(entity, new MessageSelectBlock(tree, 10000, Color.ORANGE));
@@ -89,19 +93,20 @@ public class NearestTreeSensor<E extends SpiritEntity> extends ExtendedSensor<E>
         }
 
         //get blocks in work area. We do /2 because we offset from the center
-        var blocksInWorkArea = BlockPos.betweenClosedStream(
+        //iterate with a mutable pos, only matches are copied, and never load chunks
+        List<BlockPos> potentialStumps = new ArrayList<>();
+        for (BlockPos pos : BlockPos.betweenClosed(
                 workAreaCenter.offset(-workAreaSize / 2, -workAreaSize / 2, -workAreaSize / 2),
-                workAreaCenter.offset(workAreaSize / 2, workAreaSize / 2, workAreaSize / 2)
-        ).map(BlockPos::immutable);
-
-        //filter potential stumps
-        List<BlockPos> potentialStumps = blocksInWorkArea
-                .filter(pos -> isLog(level, pos)
-                        && isTreeSoil(level, pos.below())
-                        && !nonTreeLogs.contains(pos)
-                        && !unreachableTrees.contains(pos)
-                )
-                .collect(Collectors.toList());
+                workAreaCenter.offset(workAreaSize / 2, workAreaSize / 2, workAreaSize / 2))) {
+            //filter potential stumps
+            if (level.hasChunkAt(pos)
+                    && isLog(level, pos)
+                    && isTreeSoil(level, pos.below())
+                    && !nonTreeLogs.contains(pos)
+                    && !unreachableTrees.contains(pos)) {
+                potentialStumps.add(pos.immutable());
+            }
+        }
 
         //TODO: refactor to search in increaseing radiuses? (manhattan distance helper might help, or "closest match"
 
