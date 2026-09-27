@@ -161,6 +161,10 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
     private LootTable storedLootTable = null;
     private int xpStored;
     private boolean wait;
+    // Sync tracking, only client-visible state changes are synced via block updates
+    private boolean lastSyncedActive = false;
+    private int lastSyncedMaxMobLife = 0;
+    private int lastSyncedMaxHitTimer = 0;
     private ResourceHandler<ItemResource> handlerBelow = null;
     private BlockState cachedStateBelow = null;
 
@@ -240,7 +244,8 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
 
     public void tick() {
         if (!(this.level instanceof ServerLevel serverLevel)) {
-            if (this.hitTimer == 1 && this.level != null) {
+            //hit timer is not synced every hit, so derive fast hits from the max hit timer
+            if (this.maxHitTimer == 1 && this.mobHealth > 0 && this.level != null) {
                 this.level.addParticle(
                         ParticleTypes.ANGRY_VILLAGER,
                         this.getBlockPos().getX() + 0.5f,
@@ -249,6 +254,17 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
                         0.0D, 0.0D, 0.0D
                 );
             }
+            return;
+        }
+
+        this.serverTick(serverLevel);
+        this.markNetworkDirtyIfNeeded();
+    }
+
+    protected void serverTick(ServerLevel serverLevel) {
+        //cheap early exit while idle, to avoid the redstone check and item stack copies
+        if (this.inputSoulHandler.getResource(0).isEmpty() || this.inputWeaponHandler.getResource(0).isEmpty()) {
+            this.resetTime();
             return;
         }
 
@@ -318,11 +334,24 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
             this.mobHealth = this.maxMobLife;
         }
 
-        this.markNetworkDirty();
-
         if (this.outputDirty) {
             this.setChanged();
             this.outputDirty = false;
+        }
+    }
+
+    /**
+     * Sends a block update only if client-visible state changed.
+     * The GUI progress is synced via the container data slots.
+     */
+    protected void markNetworkDirtyIfNeeded() {
+        boolean active = this.mobHealth > 0;
+        if (active != this.lastSyncedActive || this.maxMobLife != this.lastSyncedMaxMobLife ||
+                this.maxHitTimer != this.lastSyncedMaxHitTimer) {
+            this.lastSyncedActive = active;
+            this.lastSyncedMaxMobLife = this.maxMobLife;
+            this.lastSyncedMaxHitTimer = this.maxHitTimer;
+            this.markNetworkDirty();
         }
     }
 
