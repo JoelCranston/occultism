@@ -557,7 +557,8 @@ public abstract class FamiliarEntity extends PathfinderMob implements IFamiliar 
 
         @Override
         public boolean canUse() {
-            return !this.entity.isInWater() && this.entity.getFamiliarOwner() != null
+            //check the stored owner, so familiars keep sitting while their owner is offline
+            return !this.entity.isInWater() && this.entity.hasFamiliarOwner()
                     && this.entity.isSitting();
         }
 
