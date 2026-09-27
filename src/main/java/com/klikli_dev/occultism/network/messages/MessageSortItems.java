@@ -24,9 +24,12 @@ package com.klikli_dev.occultism.network.messages;
 
 import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.api.common.blockentity.IStorageAccessor;
-import com.klikli_dev.occultism.api.common.container.IStorageControllerContainer;
 import com.klikli_dev.occultism.api.common.data.SortDirection;
 import com.klikli_dev.occultism.api.common.data.SortType;
+import com.klikli_dev.occultism.common.container.storage.StableWormholeContainer;
+import com.klikli_dev.occultism.common.container.storage.StorageControllerContainer;
+import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
+import com.klikli_dev.occultism.common.container.storage.StorageRemoteContainer;
 import com.klikli_dev.occultism.network.IMessage;
 import com.klikli_dev.occultism.registry.OccultismDataComponents;
 import net.minecraft.core.BlockPos;
@@ -59,25 +62,32 @@ public class MessageSortItems implements IMessage {
 
     @Override
     public void onServerReceived(MinecraftServer minecraftServer, ServerPlayer player) {
-        if (player.containerMenu instanceof IStorageControllerContainer) {
-            if (!((IStorageControllerContainer) player.containerMenu).isContainerItem()) {
+        //we only modify what the player actually has open, the client supplied position is not trusted.
+        StorageControllerContainerBase container = StorageControllerContainerBase.getValidOpenContainer(player);
+        if (container == null)
+            return;
 
-                //ensure players cannot load arbitrary chunks
-                if (!player.level().hasChunkAt(this.entityPosition))
-                    return;
-
-                BlockEntity blockEntity = player.level().getBlockEntity(this.entityPosition);
-                if (blockEntity instanceof IStorageAccessor storageAccessor) {
-                    storageAccessor.setSortType(this.sortType);
-                    storageAccessor.setSortDirection(this.sortDirection);
-                    blockEntity.setChanged();
-                }
-            } else {
-                //for item remotes, we just set the nbt.
-                ItemStack stack = player.getMainHandItem();
-                stack.set(OccultismDataComponents.SORT_DIRECTION, this.sortDirection);
-                stack.set(OccultismDataComponents.SORT_TYPE, this.sortType);
+        if (container instanceof StorageRemoteContainer storageRemoteContainer) {
+            //for item remotes, we just set the data components on the remote that is open.
+            ItemStack remote = storageRemoteContainer.getStorageRemote();
+            if (!remote.isEmpty()) {
+                remote.set(OccultismDataComponents.SORT_DIRECTION, this.sortDirection);
+                remote.set(OccultismDataComponents.SORT_TYPE, this.sortType);
             }
+            return;
+        }
+
+        IStorageAccessor storageAccessor = null;
+        if (container instanceof StableWormholeContainer stableWormholeContainer) {
+            storageAccessor = stableWormholeContainer.getStableWormhole();
+        } else if (container instanceof StorageControllerContainer storageControllerContainer) {
+            storageAccessor = storageControllerContainer.getStorageController();
+        }
+
+        if (storageAccessor instanceof BlockEntity blockEntity) {
+            storageAccessor.setSortType(this.sortType);
+            storageAccessor.setSortDirection(this.sortDirection);
+            blockEntity.setChanged();
         }
     }
 
