@@ -43,9 +43,12 @@ import java.util.Optional;
 
 public class ExtractItemsGoal extends PausableGoal {
 
+    protected static final int REPATH_INTERVAL = 10;
+
     protected final SpiritEntity entity;
     protected final BlockSorter targetSorter;
     protected BlockPos targetBlock = null;
+    protected long nextRepathTime;
 
     public ExtractItemsGoal(SpiritEntity entity) {
         this.entity = entity;
@@ -85,6 +88,11 @@ public class ExtractItemsGoal extends PausableGoal {
         return !this.isPaused() && this.targetBlock != null && this.entity.getItemInHand(InteractionHand.MAIN_HAND).isEmpty();
     }
 
+    @Override
+    public void start() {
+        this.nextRepathTime = 0;
+    }
+
     public void stop() {
         this.entity.getNavigation().stop();
         this.resetTarget();
@@ -93,7 +101,7 @@ public class ExtractItemsGoal extends PausableGoal {
     @Override
     public void tick() {
         if (this.targetBlock != null) {
-            if (this.entity.level().getBlockEntity(this.targetBlock) != null) {
+            if (this.entity.level().hasChunkAt(this.targetBlock) && this.entity.level().getBlockEntity(this.targetBlock) != null) {
                 BlockEntity blockEntity = this.entity.level().getBlockEntity(this.targetBlock);
 
                 float accessDistance = 1.86f;
@@ -110,8 +118,9 @@ public class ExtractItemsGoal extends PausableGoal {
                 if (distance < accessDistance) {
                     //stop moving while taking out
                     this.entity.getNavigation().stop();
-                } else {
-                    //continue moving
+                } else if (this.entity.level().getGameTime() >= this.nextRepathTime) {
+                    //continue moving, but only recalculate the path every few ticks
+                    this.nextRepathTime = this.entity.level().getGameTime() + REPATH_INTERVAL;
                     BlockPos moveTarget = this.getMoveTarget();
                     this.entity.getNavigation().moveTo(this.entity.getNavigation().createPath(moveTarget, 0), 1.0f);
                 }
@@ -200,6 +209,10 @@ public class ExtractItemsGoal extends PausableGoal {
         this.targetBlock = null;
         Optional<BlockPos> targetPos = this.entity.getExtractPosition();
         targetPos.ifPresent((pos) -> {
+            //do not load chunks to validate the target, wait until it is loaded instead
+            if (!this.entity.level().hasChunkAt(pos))
+                return;
+
             var rawHandler = this.entity.level().getCapability(Item.BLOCK, pos, this.entity.getExtractFacing());
             if (rawHandler == null) {
                 //the extract block is not valid for extracting, so we disable this to allow exiting this task.

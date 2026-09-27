@@ -47,7 +47,7 @@ public class BlockPosMoveTarget implements IMoveTarget {
 
     @Override
     public boolean isValid() {
-        return this.level.getBlockEntity(this.target) != null;
+        return this.level.hasChunkAt(this.target) && this.level.getBlockEntity(this.target) != null;
     }
 
     @Override
