@@ -51,6 +51,7 @@ public class ExtractItemsGoal extends PausableGoal {
     protected long nextRepathTime;
 
     public ExtractItemsGoal(SpiritEntity entity) {
+        super(entity);
         this.entity = entity;
         this.targetSorter = new BlockSorter(entity);
         this.setFlags(EnumSet.of(Flag.TARGET));
