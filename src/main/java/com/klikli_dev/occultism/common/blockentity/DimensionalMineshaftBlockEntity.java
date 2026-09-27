@@ -314,6 +314,13 @@ public class DimensionalMineshaftBlockEntity extends NetworkedBlockEntity implem
             return;
 
         ItemStack input = getStack(this.inputHandler, 0);
+        ResourceHandler<ItemResource> currentHandler = this.getCurrentHandler();
+
+        //a previous attempt to move the miner to the output before it breaks failed, retry instead of mining and breaking it
+        if (this.saveMiner && input.nextDamageWillBreak()) {
+            this.tryOutputMiner(currentHandler, input);
+            return;
+        }
 
         int fortune = this.bonusFortune && input.isEnchanted() ? input.getEnchantmentLevel(this.FORTUNE) : 0;
         if (fortune > 0) {
@@ -360,7 +367,6 @@ public class DimensionalMineshaftBlockEntity extends NetworkedBlockEntity implem
         }
 
         // Insert batched drops
-        ResourceHandler<ItemResource> currentHandler = this.getCurrentHandler();
         for (ItemStack drop : batchedDrops) {
             ItemTransferUtil.insertItemStacked(currentHandler, drop, false);
         }
@@ -368,9 +374,19 @@ public class DimensionalMineshaftBlockEntity extends NetworkedBlockEntity implem
         input.hurtAndBreak(1, (ServerLevel) this.level, (LivingEntity) null, (item) -> {});
         //Check if the next operation will break the miner
         if (this.saveMiner && input.nextDamageWillBreak()) {
-            ItemTransferUtil.insertItemStacked(currentHandler, input.copy(), false);
-            input.shrink(1);
+            this.tryOutputMiner(currentHandler, input);
+            return;
         }
+        this.inputHandler.set(0, ItemResource.of(input), input.getCount());
+    }
+
+    /**
+     * Moves the miner to the output, but only removes it from the input if it could be fully inserted.
+     */
+    private void tryOutputMiner(ResourceHandler<ItemResource> currentHandler, ItemStack input) {
+        ItemStack remainder = ItemTransferUtil.insertItemStacked(currentHandler, input.copy(), false);
+        if (remainder.isEmpty())
+            input.shrink(1);
         this.inputHandler.set(0, ItemResource.of(input), input.getCount());
     }
 
