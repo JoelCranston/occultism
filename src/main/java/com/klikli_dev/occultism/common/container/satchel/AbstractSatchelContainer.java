@@ -103,14 +103,47 @@ public abstract class AbstractSatchelContainer extends AbstractContainerMenu {
         return itemstack;
     }
 
-    @Override
-    public boolean stillValid(Player player) {
+    /**
+     * @return the stack currently in the slot the satchel was opened from.
+     * -1 is the curios backpack slot, any other value is a player inventory slot (including Inventory.SLOT_OFFHAND).
+     */
+    protected ItemStack getSourceStack(Player player) {
         if (this.selectedSlot == -1) {
-            return CuriosUtil.getBackpack(player).getItem() == this.satchelStack.getItem();
+            return CuriosUtil.getBackpack(player);
         }
         if (this.selectedSlot < 0 || this.selectedSlot >= player.getInventory().getContainerSize())
-            return false;
-        return player.getInventory().getItem(this.selectedSlot).getItem() == this.satchelStack.getItem();
+            return ItemStack.EMPTY;
+        return player.getInventory().getItem(this.selectedSlot);
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        ItemStack sourceStack = this.getSourceStack(player);
+        if (this.satchelInventory instanceof SatchelInventory inventory) {
+            //server side: the satchel we are writing to must still be exactly the stack in the source slot.
+            return !sourceStack.isEmpty() && sourceStack == inventory.getItemStack();
+        }
+        return !sourceStack.isEmpty() && sourceStack.getItem() == this.satchelStack.getItem();
+    }
+
+    /**
+     * Creates a player inventory slot, locking the slot that holds the open satchel so it cannot be moved.
+     */
+    protected Slot createPlayerSlot(int slotIndex, int x, int y) {
+        if (slotIndex != this.selectedSlot)
+            return new Slot(this.playerInventory, slotIndex, x, y);
+
+        return new Slot(this.playerInventory, slotIndex, x, y) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return false;
+            }
+
+            @Override
+            public boolean mayPickup(Player playerIn) {
+                return false;
+            }
+        };
     }
 
     protected void setupPlayerInventorySlots() {
@@ -120,7 +153,7 @@ public abstract class AbstractSatchelContainer extends AbstractContainerMenu {
 
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 9; j++)
-                this.addSlot(new Slot(this.playerInventory, j + i * 9 + hotbarSlots, playerInventoryLeft + j * 18,
+                this.addSlot(this.createPlayerSlot(j + i * 9 + hotbarSlots, playerInventoryLeft + j * 18,
                         playerInventoryTop + i * 18));
     }
 
@@ -128,7 +161,7 @@ public abstract class AbstractSatchelContainer extends AbstractContainerMenu {
         int hotbarTop = 232;
         int hotbarLeft = 44;
         for (int i = 0; i < 9; i++) {
-            this.addSlot(new Slot(this.playerInventory, i, hotbarLeft + i * 18, hotbarTop));
+            this.addSlot(this.createPlayerSlot(i, hotbarLeft + i * 18, hotbarTop));
         }
     }
 

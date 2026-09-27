@@ -42,7 +42,7 @@ public class SatchelInventory extends SimpleContainer {
     }
 
     public void readItemStack() {
-        this.itemStack.get(DataComponents.CONTAINER).copyInto(this.getItems());
+        this.itemStack.getOrDefault(DataComponents.CONTAINER, ItemContainerContents.EMPTY).copyInto(this.getItems());
     }
 
     public void writeItemStack() {

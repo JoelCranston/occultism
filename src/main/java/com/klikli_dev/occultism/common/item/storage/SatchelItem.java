@@ -32,6 +32,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -53,8 +54,8 @@ public class SatchelItem extends Item {
         final ItemStack stack = player.getItemInHand(hand);
 
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
-            //here we use main hand item as selected slot
-            int selectedSlot = hand == InteractionHand.MAIN_HAND ? player.getInventory().getSelectedSlot() : -1;
+            //here we use main hand item as selected slot, or the offhand slot
+            int selectedSlot = hand == InteractionHand.MAIN_HAND ? player.getInventory().getSelectedSlot() : Inventory.SLOT_OFFHAND;
 
             serverPlayer.openMenu(
                     new SimpleMenuProvider((id, playerInventory, unused) -> {
