@@ -22,7 +22,6 @@
 
 package com.klikli_dev.occultism.common.ritual;
 
-import com.google.common.base.Suppliers;
 import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.common.blockentity.GoldenSacrificialBowlBlockEntity;
 import com.klikli_dev.occultism.common.blockentity.RitualCatcherBlockEntity;
@@ -41,6 +40,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -50,6 +50,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -61,7 +62,6 @@ import net.neoforged.neoforge.transfer.transaction.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public abstract class Ritual {
@@ -86,7 +86,7 @@ public abstract class Ritual {
     public RitualRecipe recipe;
 
     public Identifier factoryId;
-    Supplier<RecipeHolder<RitualRecipe>> recipeHolderSupplier;
+    ResourceKey<Recipe<?>> recipeKey;
 
     //region Getter / Setter
 
@@ -136,16 +136,21 @@ public abstract class Ritual {
 
     @SuppressWarnings("unchecked")
     public RecipeHolder<RitualRecipe> getRecipeHolder(Level level) {
-        if (this.recipeHolderSupplier == null) {
-            this.recipeHolderSupplier =
-                    Suppliers.memoize(() -> {
-                        return OccultismRecipeManager.get().getRecipesByType(OccultismRecipes.RITUAL_TYPE.get(), level).stream()
-                                .filter(r -> r.value() == this.getRecipe())
-                                .map(r -> r)
-                                .findFirst().orElse(null);
-                    });
+        //only cache the recipe key, not the holder or level, as rituals are cached per recipe and would otherwise keep the level alive.
+        if (this.recipeKey != null) {
+            var holder = OccultismRecipeManager.get().getRecipeByKey(OccultismRecipes.RITUAL_TYPE.get(), this.recipeKey, level)
+                    .map(r -> r).orElse(null);
+            if (holder != null && holder.value() == this.getRecipe())
+                return holder;
         }
-        return this.recipeHolderSupplier.get();
+
+        RecipeHolder<RitualRecipe> holder = OccultismRecipeManager.get().getRecipesByType(OccultismRecipes.RITUAL_TYPE.get(), level).stream()
+                .filter(r -> r.value() == this.getRecipe())
+                .map(r -> r)
+                .findFirst().orElse(null);
+        if (holder != null)
+            this.recipeKey = holder.id();
+        return holder;
     }
 
     public String getRitualID(ServerPlayer player) {
