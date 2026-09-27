@@ -22,17 +22,23 @@
 
 package com.klikli_dev.occultism.common.entity.ai.goal;
 
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
 
 public abstract class PausableGoal extends Goal {
 
+    protected final Mob pausableMob;
     protected long lastPaused;
     protected long pauseDuration;
 
+    protected PausableGoal(Mob mob) {
+        this.pausableMob = mob;
+    }
+
     //region Getter / Setter
     public boolean isPaused() {
-
-        long currentTime = System.currentTimeMillis();
+        //use game time instead of wall clock time, so pauses respect server lag and paused single player games
+        long currentTime = this.pausableMob.level().getGameTime();
         return this.lastPaused + this.pauseDuration > currentTime;
     }
     //endregion Getter / Setter
@@ -47,9 +53,14 @@ public abstract class PausableGoal extends Goal {
         return super.canContinueToUse() && !this.isPaused();
     }
 
+    /**
+     * Pauses the goal.
+     *
+     * @param i the pause duration in milliseconds, converted to game ticks.
+     */
     public void pause(long i) {
-        this.pauseDuration = i;
-        this.lastPaused = System.currentTimeMillis();
+        this.pauseDuration = i / 50;
+        this.lastPaused = this.pausableMob.level().getGameTime();
     }
 
     public void unpause() {

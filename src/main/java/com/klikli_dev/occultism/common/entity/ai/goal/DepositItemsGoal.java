@@ -52,6 +52,7 @@ public class DepositItemsGoal extends PausableGoal {
     protected long nextRepathTime;
 
     public DepositItemsGoal(SpiritEntity entity) {
+        super(entity);
         this.entity = entity;
         this.targetSorter = new BlockSorter(entity);
         this.setFlags(EnumSet.of(Flag.TARGET));

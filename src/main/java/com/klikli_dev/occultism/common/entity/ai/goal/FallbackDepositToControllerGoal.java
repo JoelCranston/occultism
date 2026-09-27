@@ -44,6 +44,7 @@ public class FallbackDepositToControllerGoal extends PausableGoal {
     protected int retries = 0;
 
     public FallbackDepositToControllerGoal(SpiritEntity entity, ManageMachineJob job) {
+        super(entity);
         this.entity = entity;
         this.job = job;
         this.targetSorter = new BlockSorter(entity);
