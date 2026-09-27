@@ -182,16 +182,25 @@ public class DimensionalMineshaftBlockEntity extends NetworkedBlockEntity implem
 
     @Override
     public void saveNetwork(ValueOutput output) {
-        this.lastSyncedMiningTime = this.miningTime;
-        this.lastSyncedMaxMiningTime = this.maxMiningTime;
         output.putInt("miningTime", this.miningTime);
         output.putInt("maxMiningTime", this.maxMiningTime);
         super.saveNetwork(output);
     }
 
     public void tick() {
+        //cheap early exits while idle, to avoid the redstone check and item stack copies
+        if (this.level.isClientSide()) {
+            if (this.miningTime <= 0)
+                return;
+        } else if (this.miningTime <= 0 && this.lastSyncedMiningTime <= 0 && !this.outputDirty &&
+                this.inputHandler.getResource(0).isEmpty()) {
+            return;
+        }
+
         if (this.level.hasNeighborSignal(this.getBlockPos())) {
             this.miningTime = 0;
+            if (!this.level.isClientSide() && this.lastSyncedMiningTime > 0)
+                this.markMiningNetworkDirty(); //let the client know we stopped
             return;
         }
         if (!this.level.isClientSide()) {
@@ -243,25 +252,19 @@ public class DimensionalMineshaftBlockEntity extends NetworkedBlockEntity implem
             }
 
             // Sync Logic
+            // Sync if max mining time changed (e.g. new item with different stats)
             boolean needsSync = this.maxMiningTime != this.lastSyncedMaxMiningTime;
 
-            // Sync if max mining time changed (e.g. new item with different stats)
-
-            // Sync if mining active state changes (0 <-> >0)
+            // Sync if mining active state changes (0 <-> >0), clients only need that for particles.
+            // The GUI progress is synced via the container data slots.
             boolean wasActive = this.lastSyncedMiningTime > 0;
             boolean isActive = this.miningTime > 0;
             if (wasActive != isActive) {
                 needsSync = true;
             }
 
-            // Syncs if progress drifts by 10
-            if (Math.abs(this.miningTime - this.lastSyncedMiningTime) >= 10) {
-                needsSync = true;
-            }
-            // Also sync if we just finished (already covered by 0 check above? sorta).
-
             if (needsSync) {
-                this.markNetworkDirty();
+                this.markMiningNetworkDirty();
             }
 
             if (this.outputDirty) {
@@ -274,6 +277,12 @@ public class DimensionalMineshaftBlockEntity extends NetworkedBlockEntity implem
                         this.worldPosition.getY() + 0.5, this.worldPosition.getZ() + 0.5f, 0.0D, 0.0D, 0.0D);
             }
         }
+    }
+
+    protected void markMiningNetworkDirty() {
+        this.lastSyncedMiningTime = this.miningTime;
+        this.lastSyncedMaxMiningTime = this.maxMiningTime;
+        this.markNetworkDirty();
     }
 
     @Nullable
