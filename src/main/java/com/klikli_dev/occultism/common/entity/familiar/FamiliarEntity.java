@@ -30,6 +30,7 @@ import com.klikli_dev.occultism.common.item.familiar.FamiliarCurio;
 import com.klikli_dev.occultism.registry.OccultismAdvancements;
 import com.klikli_dev.occultism.registry.OccultismDataStorage;
 import com.klikli_dev.occultism.registry.OccultismItems;
+import com.klikli_dev.occultism.util.FamiliarUtil;
 import com.klikli_dev.occultism.util.ItemTransferUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -273,11 +274,12 @@ public abstract class FamiliarEntity extends PathfinderMob implements IFamiliar 
             this.jukeboxPos = null;
         }
 
+        //stagger by id so not all familiars refresh their effects on the same tick
         LivingEntity owner;
-        if (!this.level().isClientSide() && this.level().getGameTime() % 10 == 0 && (owner = this.getFamiliarOwner()) != null
+        if (!this.level().isClientSide() && (this.tickCount + this.getId()) % 10 == 0 && (owner = this.getFamiliarOwner()) != null
                 && this.distanceTo(owner) < MAX_BOOST_DISTANCE)
             for (MobEffectInstance effect : this.getFamiliarEffects())
-                owner.addEffect(effect);
+                FamiliarUtil.applyFamiliarEffect(owner, effect);
 
         super.aiStep();
     }

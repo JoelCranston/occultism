@@ -26,6 +26,7 @@ import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.common.entity.familiar.IFamiliar;
 import com.klikli_dev.occultism.common.item.familiar.FamiliarCurio;
 import com.klikli_dev.occultism.registry.OccultismDataStorage;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.*;
 import net.neoforged.neoforge.common.Tags;
 import top.theillusivec4.curios.api.CuriosApi;
@@ -37,6 +38,26 @@ import java.util.List;
 import java.util.function.Predicate;
 
 public class FamiliarUtil {
+
+    /**
+     * Familiar effects are refreshed once their remaining duration drops below this threshold.
+     * Keep it above 200 ticks, below that night vision starts to flicker.
+     */
+    private static final int FAMILIAR_EFFECT_REFRESH_THRESHOLD = 240;
+
+    /**
+     * Applies a familiar effect to the owner, but only if the owner does not have it yet, has it with a different amplifier
+     * or it is about to run out. This avoids sending effect updates and rebuilding attributes every time the effects are refreshed.
+     *
+     * @param owner  the owner to apply the effect to.
+     * @param effect the familiar effect.
+     */
+    public static void applyFamiliarEffect(LivingEntity owner, MobEffectInstance effect) {
+        MobEffectInstance current = owner.getEffect(effect.getEffect());
+        if (current == null || current.getAmplifier() != effect.getAmplifier()
+                || current.getDuration() < FAMILIAR_EFFECT_REFRESH_THRESHOLD)
+            owner.addEffect(effect);
+    }
 
     public static List<LivingEntity> getOwnerEnemies(LivingEntity owner, LivingEntity familiar, float range) {
         if (null == owner)

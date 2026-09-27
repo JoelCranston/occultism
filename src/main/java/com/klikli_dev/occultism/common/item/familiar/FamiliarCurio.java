@@ -8,6 +8,7 @@ import com.klikli_dev.occultism.registry.OccultismAdvancements;
 import com.klikli_dev.occultism.registry.OccultismDataComponents;
 import com.klikli_dev.occultism.registry.OccultismParticles;
 import com.klikli_dev.occultism.registry.OccultismSounds;
+import com.klikli_dev.occultism.util.FamiliarUtil;
 import com.klikli_dev.occultism.util.ItemNBTUtil;
 import com.klikli_dev.occultism.util.TextUtil;
 import net.minecraft.ChatFormatting;
@@ -200,9 +201,10 @@ public interface FamiliarCurio {
                 if (familiar.getFamiliarOwner() != entity)
                     continue;
 
-                if (!level.isClientSide() && entity.tickCount % 20 == 0) {
+                //stagger by id so not all wearers refresh their effects on the same tick
+                if (!level.isClientSide() && (entity.tickCount + entity.getId()) % 20 == 0) {
                     for (MobEffectInstance effect : familiar.getFamiliarEffects())
-                        entity.addEffect(effect);
+                        FamiliarUtil.applyFamiliarEffect(entity, effect);
                 }
 
                 familiar.curioTick(entity);
