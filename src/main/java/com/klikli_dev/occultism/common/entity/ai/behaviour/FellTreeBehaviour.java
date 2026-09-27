@@ -16,7 +16,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.behavior.BlockPosTracker;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.MemoryStatus;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
@@ -24,12 +23,16 @@ import java.util.*;
 
 public class FellTreeBehaviour<E extends SpiritEntity> extends ExtendedBehaviour<E> {
     public static final double FELL_TREE_RANGE_SQUARE = Math.pow(3.5, 2); //we're comparing to square distance
+    public static final int MAX_FELL_BLOCKS = 256;
+    public static final int MAX_FELL_HORIZONTAL_DISTANCE = 12;
+    public static final int MAX_STUMP_BLOCKS = 16;
 
     private static final List<Pair<MemoryModuleType<?>, MemoryStatus>> MEMORY_REQUIREMENTS = ObjectArrayList.of(
             Pair.of(OccultismMemoryTypes.NEAREST_TREE.get(), MemoryStatus.VALUE_PRESENT));
 
     protected int breakingTime;
     protected int previousBreakProgress;
+    protected BlockPos breakingPos;
 
     public FellTreeBehaviour() {
         super(MEMORY_REQUIREMENTS, 200);
@@ -62,11 +65,11 @@ public class FellTreeBehaviour<E extends SpiritEntity> extends ExtendedBehaviour
             if (i != this.previousBreakProgress) {
                 entity.level().destroyBlockProgress(entity.getId(), treePos, i);
                 this.previousBreakProgress = i;
+                this.breakingPos = treePos;
             }
             if (this.breakingTime == 160) {
                 entity.playSound(SoundEvents.WOOD_BREAK, 1, 1);
-                List<BlockPos> stump = new ArrayList<>(List.of());
-                this.addAllStump(treePos, entity.level(), stump);
+                List<BlockPos> stump = this.getAllStump(treePos, entity.level());
                 this.fellTree(entity, treePos);
                 var felled = BrainUtil.getMemory(entity, OccultismMemoryTypes.LAST_FELLED_TREE.get());
                 if (felled != null) {
@@ -88,9 +91,15 @@ public class FellTreeBehaviour<E extends SpiritEntity> extends ExtendedBehaviour
     protected void start(E entity) {
         this.breakingTime = 0;
         this.previousBreakProgress = -1;
+        this.breakingPos = null;
     }
 
     protected void stop(E entity) {
+        //reset the break animation, otherwise it stays visible if we abort
+        if (this.breakingPos != null) {
+            entity.level().destroyBlockProgress(entity.getId(), this.breakingPos, -1);
+            this.breakingPos = null;
+        }
         BrainUtil.clearMemory(entity, OccultismMemoryTypes.NEAREST_TREE.get());
     }
 
@@ -100,11 +109,19 @@ public class FellTreeBehaviour<E extends SpiritEntity> extends ExtendedBehaviour
         Queue<BlockPos> blocks = new ArrayDeque<>();
         Set<BlockPos> visited = new HashSet<>();
         blocks.add(base);
+        int felledBlocks = 0;
 
-        while (!blocks.isEmpty()) {
+        while (!blocks.isEmpty() && felledBlocks < MAX_FELL_BLOCKS) {
 
             BlockPos pos = blocks.remove();
             if (!visited.add(pos)) {
+                continue;
+            }
+
+            //stay close to the stump and never load chunks
+            if (Math.abs(pos.getX() - base.getX()) > MAX_FELL_HORIZONTAL_DISTANCE ||
+                    Math.abs(pos.getZ() - base.getZ()) > MAX_FELL_HORIZONTAL_DISTANCE ||
+                    !level.hasChunkAt(pos)) {
                 continue;
             }
 
@@ -129,20 +146,37 @@ public class FellTreeBehaviour<E extends SpiritEntity> extends ExtendedBehaviour
             }
 
             level.destroyBlock(pos, true);
+            felledBlocks++;
         }
 
     }
 
-    private void addAllStump(BlockPos pos, BlockGetter level, List<BlockPos> list) {
-        for (Direction facing : Plane.HORIZONTAL) {
-            BlockPos posR = pos.relative(facing);
-            if (!list.contains(posR)
-                    && level.getBlockState(posR).is(BlockTags.LOGS)
-                    && level.getBlockState(posR.below()).is(BlockTags.DIRT)) {
-                list.add(posR);
-                this.addAllStump(posR, level, list);
+    /**
+     * Collects the stump positions of the tree, including the given stump position itself.
+     * Multi-trunk trees (e.g. 2x2) have multiple connected stump positions.
+     */
+    private List<BlockPos> getAllStump(BlockPos treePos, Level level) {
+        List<BlockPos> stump = new ArrayList<>();
+        Set<BlockPos> visited = new HashSet<>();
+        Queue<BlockPos> toCheck = new ArrayDeque<>();
+        stump.add(treePos);
+        visited.add(treePos);
+        toCheck.add(treePos);
+
+        while (!toCheck.isEmpty() && stump.size() < MAX_STUMP_BLOCKS) {
+            BlockPos pos = toCheck.remove();
+            for (Direction facing : Plane.HORIZONTAL) {
+                BlockPos posR = pos.relative(facing);
+                if (visited.add(posR)
+                        && level.hasChunkAt(posR)
+                        && level.getBlockState(posR).is(BlockTags.LOGS)
+                        && level.getBlockState(posR.below()).is(BlockTags.DIRT)) {
+                    stump.add(posR);
+                    toCheck.add(posR);
+                }
             }
         }
+        return stump;
     }
 
 }
