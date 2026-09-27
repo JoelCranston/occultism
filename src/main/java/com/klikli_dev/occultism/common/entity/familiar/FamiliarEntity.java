@@ -289,7 +289,8 @@ public abstract class FamiliarEntity extends PathfinderMob implements IFamiliar 
 
     @Override
     protected InteractionResult mobInteract(Player playerIn, InteractionHand hand) {
-        if (this.getOwner() == null)
+        //only claim familiars without owner, an offline owner still owns the familiar
+        if (!this.hasFamiliarOwner())
             this.setFamiliarOwner(playerIn);
 
         if (hand != InteractionHand.MAIN_HAND)
@@ -324,6 +325,11 @@ public abstract class FamiliarEntity extends PathfinderMob implements IFamiliar 
     @Override
     public LivingEntity getFamiliarOwner() {
         return this.getOwner();
+    }
+
+    @Override
+    public boolean hasFamiliarOwner() {
+        return this.getOwnerId() != null;
     }
 
     @Override
