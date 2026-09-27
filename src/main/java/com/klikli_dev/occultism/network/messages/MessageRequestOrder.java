@@ -25,6 +25,7 @@ package com.klikli_dev.occultism.network.messages;
 import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.api.common.blockentity.IStorageController;
 import com.klikli_dev.occultism.api.common.data.GlobalBlockPos;
+import com.klikli_dev.occultism.common.container.storage.StorageControllerContainerBase;
 import com.klikli_dev.occultism.common.misc.ItemStackComparator;
 import com.klikli_dev.occultism.network.IMessage;
 import com.klikli_dev.occultism.util.StorageUtil;
@@ -64,22 +65,34 @@ public class MessageRequestOrder implements IMessage {
 
     @Override
     public void onServerReceived(MinecraftServer minecraftServer, ServerPlayer player) {
+        if (this.stack.isEmpty() || this.storageControllerPosition == null || this.targetMachinePosition == null)
+            return;
+
+        //only accept orders from a still valid storage menu for the requested storage controller
+        StorageControllerContainerBase container = StorageControllerContainerBase.getValidOpenContainer(player);
+        if (container == null || !this.storageControllerPosition.equals(container.getStorageControllerGlobalBlockPos()))
+            return;
 
         Level level = minecraftServer.getLevel(this.storageControllerPosition.getDimensionKey());
         //prevent block loading by message
-        if (!level.hasChunkAt(this.storageControllerPosition.getPos()))
+        if (level == null || !level.hasChunkAt(this.storageControllerPosition.getPos()))
             return;
 
         BlockEntity blockEntity = level.getBlockEntity(this.storageControllerPosition.getPos());
-        if (!(blockEntity instanceof IStorageController storageController))
+        if (!(blockEntity instanceof IStorageController storageController) || storageController != container.getStorageController())
             return; //early exit because we did not find the storage controller.
 
         //first dump the order slot back in.
         StorageUtil.clearOpenOrderSlot(player, true);
 
-        //then place the order.
+        //then place the order, but never for more than is available or fits into a single stack.
         ItemStackComparator comparator = new ItemStackComparator(this.stack, true);
-        storageController.addDepositOrder(this.targetMachinePosition, comparator, this.stack.getCount());
+        int amount = Math.min(this.stack.getCount(), this.stack.getMaxStackSize());
+        amount = Math.min(amount, storageController.getAvailableAmount(comparator));
+        if (amount <= 0)
+            return;
+
+        storageController.addDepositOrder(this.targetMachinePosition, comparator, amount);
         player.sendSystemMessage(
                 Component.translatable("network.messages." + Occultism.MODID + ".request_order.order_received"));
     }
