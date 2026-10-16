@@ -212,13 +212,6 @@ public class DimensionalBattlefieldContainer extends AbstractContainerMenu {
         public boolean mayPlace(ItemStack stack) {
             return stack.is(Tags.Items.TOOLS);
         }
-
-        @Override
-        public void setChanged() {
-            //restart the fight if the weapon changes
-            this.arena.mobHealth = this.arena.maxMobLife;
-            super.setChanged();
-        }
     }
 
     public static class InputSoulSlot extends ResourceHandlerSlot {
@@ -231,13 +224,6 @@ public class DimensionalBattlefieldContainer extends AbstractContainerMenu {
 
         public boolean mayPlace(ItemStack stack) {
             return stack.has(DataComponents.ENTITY_DATA);
-        }
-
-        @Override
-        public void setChanged() {
-            //restart the fight if the soul changes
-            this.arena.mobHealth = this.arena.maxMobLife;
-            super.setChanged();
         }
     }
 
