@@ -120,6 +120,9 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
 
         @Override
         protected void onContentsChanged(int slot, ItemStack previousContents) {
+            //restart the fight if the soul changes
+            if (!ItemStack.isSameItemSameComponents(previousContents, this.getResource(slot).toStack()))
+                DimensionalBattlefieldBlockEntity.this.mobHealth = DimensionalBattlefieldBlockEntity.this.maxMobLife;
             DimensionalBattlefieldBlockEntity.this.setChanged();
             DimensionalBattlefieldBlockEntity.this.markNetworkDirty();
         }
@@ -132,6 +135,9 @@ public class DimensionalBattlefieldBlockEntity extends NetworkedBlockEntity impl
 
         @Override
         protected void onContentsChanged(int slot, ItemStack previousContents) {
+            //restart the fight if the weapon changes, but not if it just took damage
+            if (!ItemStack.isSameItem(previousContents, this.getResource(slot).toStack()))
+                DimensionalBattlefieldBlockEntity.this.mobHealth = DimensionalBattlefieldBlockEntity.this.maxMobLife;
             DimensionalBattlefieldBlockEntity.this.setChanged();
         }
     };
