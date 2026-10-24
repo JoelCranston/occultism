@@ -53,6 +53,48 @@ public class GameTestRegistry {
 
     // region Satchel and wormhole tablet
 
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> SATCHEL_WRITES_BACK_ONLY_WHILE_VALID =
+            TEST_FUNCTIONS.register("satchel_writes_back_only_while_valid", () -> SatchelTabletGameTests::satchelWritesBackOnlyWhileValid);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> TABLET_WRITES_BACK_ONLY_WHILE_VALID =
+            TEST_FUNCTIONS.register("tablet_writes_back_only_while_valid", () -> SatchelTabletGameTests::tabletWritesBackOnlyWhileValid);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> SATCHEL_REPLACED_BY_COPY_INVALIDATES_MENU =
+            TEST_FUNCTIONS.register("satchel_replaced_by_copy_invalidates_menu", () -> SatchelTabletGameTests::satchelReplacedByCopyInvalidatesMenu);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> TABLET_REPLACED_BY_COPY_INVALIDATES_MENU =
+            TEST_FUNCTIONS.register("tablet_replaced_by_copy_invalidates_menu", () -> SatchelTabletGameTests::tabletReplacedByCopyInvalidatesMenu);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> SATCHEL_SOURCE_SLOT_IS_LOCKED =
+            TEST_FUNCTIONS.register("satchel_source_slot_is_locked", () -> SatchelTabletGameTests::satchelSourceSlotIsLocked);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> TABLET_SOURCE_SLOT_IS_LOCKED =
+            TEST_FUNCTIONS.register("tablet_source_slot_is_locked", () -> SatchelTabletGameTests::tabletSourceSlotIsLocked);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> SATCHEL_HOTBAR_KEY_MOVE_INVALIDATES_WITHOUT_DUPE =
+            TEST_FUNCTIONS.register("satchel_hotbar_key_move_invalidates_without_dupe", () -> SatchelTabletGameTests::satchelHotbarKeyMoveInvalidatesWithoutDupe);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> SATCHEL_OPENED_FROM_OFFHAND_VALIDATES_OFFHAND =
+            TEST_FUNCTIONS.register("satchel_opened_from_offhand_validates_offhand", () -> SatchelTabletGameTests::satchelOpenedFromOffhandValidatesOffhand);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> TABLET_OPENED_FROM_OFFHAND_VALIDATES_OFFHAND =
+            TEST_FUNCTIONS.register("tablet_opened_from_offhand_validates_offhand", () -> SatchelTabletGameTests::tabletOpenedFromOffhandValidatesOffhand);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> ROTATE_TABLET_CONTENTS_ON_SERVER =
+            TEST_FUNCTIONS.register("rotate_tablet_contents_on_server", () -> SatchelTabletGameTests::rotateTabletContentsOnServer);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> ROTATE_TABLET_CONTENTS_IGNORED_WHEN_NOT_APPLICABLE =
+            TEST_FUNCTIONS.register("rotate_tablet_contents_ignored_when_not_applicable", () -> SatchelTabletGameTests::rotateTabletContentsIgnoredWhenNotApplicable);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> TELEPORT_SETS_BACK_COMPASS =
+            TEST_FUNCTIONS.register("teleport_sets_back_compass", () -> SatchelTabletGameTests::teleportSetsBackCompass);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> TELEPORT_WITH_BACK_COMPASS_KEEPS_ITS_TARGET =
+            TEST_FUNCTIONS.register("teleport_with_back_compass_keeps_its_target", () -> SatchelTabletGameTests::teleportWithBackCompassKeepsItsTarget);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RANDOM_TELEPORT_AT_WORLD_BORDER_DOES_NOT_THROW =
+            TEST_FUNCTIONS.register("random_teleport_at_world_border_does_not_throw", () -> SatchelTabletGameTests::randomTeleportAtWorldBorderDoesNotThrow);
+
     // endregion Satchel and wormhole tablet
 
     // region Rituals
@@ -170,7 +212,21 @@ public class GameTestRegistry {
         // endregion Storage controller
 
         // region Satchel and wormhole tablet
-
+        var satchelTabletEnvironment = event.registerEnvironment(Identifier.fromNamespaceAndPath(Occultism.MODID, "satchel_tablet"));
+        registerTest(event, SATCHEL_WRITES_BACK_ONLY_WHILE_VALID, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, TABLET_WRITES_BACK_ONLY_WHILE_VALID, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, SATCHEL_REPLACED_BY_COPY_INVALIDATES_MENU, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, TABLET_REPLACED_BY_COPY_INVALIDATES_MENU, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, SATCHEL_SOURCE_SLOT_IS_LOCKED, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, TABLET_SOURCE_SLOT_IS_LOCKED, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, SATCHEL_HOTBAR_KEY_MOVE_INVALIDATES_WITHOUT_DUPE, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, SATCHEL_OPENED_FROM_OFFHAND_VALIDATES_OFFHAND, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, TABLET_OPENED_FROM_OFFHAND_VALIDATES_OFFHAND, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, ROTATE_TABLET_CONTENTS_ON_SERVER, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, ROTATE_TABLET_CONTENTS_IGNORED_WHEN_NOT_APPLICABLE, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, TELEPORT_SETS_BACK_COMPASS, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, TELEPORT_WITH_BACK_COMPASS_KEEPS_ITS_TARGET, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, RANDOM_TELEPORT_AT_WORLD_BORDER_DOES_NOT_THROW, satchelTabletEnvironment, structure, 40, 0);
         // endregion Satchel and wormhole tablet
 
         // region Rituals
