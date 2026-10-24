@@ -609,9 +609,9 @@ public class FamiliarGameTests {
     /**
      * perf: cache familiars loaded from familiar curios - releasing a familiar right after capturing it must not lose it.
      * <p>
-     * NOT REGISTERED: exposes a bug. Capturing caches the captured (and then discarded) entity instance for the new
-     * ring data. Releasing in the same session saves that discarded instance, which {@link Entity#saveAsPassenger} refuses,
-     * so nothing is spawned and the familiar is removed from the ring.
+     * Capturing must not leave the captured (and then discarded) entity instance cached for the new ring data, as
+     * releasing it would save that discarded instance, which {@link Entity#saveAsPassenger} refuses, so nothing would be
+     * spawned and the familiar would be removed from the ring.
      */
     public static void familiarRingReleaseRightAfterCaptureKeepsFamiliar(GameTestHelper helper) {
         floor(helper, 5);

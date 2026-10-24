@@ -318,6 +318,9 @@ public class GameTestRegistry {
     public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_SOUL_GEM_PRESERVES_MOB_EQUIPMENT =
             TEST_FUNCTIONS.register("familiar_soul_gem_preserves_mob_equipment", () -> FamiliarGameTests::soulGemPreservesMobEquipment);
 
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_RING_RELEASE_RIGHT_AFTER_CAPTURE =
+            TEST_FUNCTIONS.register("familiar_ring_release_right_after_capture", () -> FamiliarGameTests::familiarRingReleaseRightAfterCaptureKeepsFamiliar);
+
     public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_RING_PRESERVES_EQUIPMENT =
             TEST_FUNCTIONS.register("familiar_ring_preserves_equipment", () -> FamiliarGameTests::familiarRingPreservesEquipment);
 
@@ -479,6 +482,7 @@ public class GameTestRegistry {
         registerTest(event, FAMILIAR_BLACKSMITH_COUNTS_LAST_IRON_CORRECTLY, familiarsEnvironment, structure, 20, 0);
         registerTest(event, FAMILIAR_SOUL_GEM_PRESERVES_MOB_EQUIPMENT, familiarsEnvironment, structure, 20, 0);
         registerTest(event, FAMILIAR_RING_PRESERVES_EQUIPMENT, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_RING_RELEASE_RIGHT_AFTER_CAPTURE, familiarsEnvironment, structure, 20, 0);
         registerTest(event, FAMILIAR_CURIO_WRITES_BACK_GUARDIAN_LIVES, familiarsEnvironment, structure, 20, 0);
         registerTest(event, FAMILIAR_APPLIES_EFFECTS_TO_OWNER, familiarsEnvironment, structure, 100, 0);
         registerTest(event, FAMILIAR_HEADLESS_WEAKENS_PLAYERS_WITH_PVP, familiarsEnvironment, structure, 100, 0);
