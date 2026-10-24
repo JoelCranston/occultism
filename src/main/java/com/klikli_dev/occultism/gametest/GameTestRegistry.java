@@ -49,6 +49,78 @@ public class GameTestRegistry {
 
     // region Storage controller
 
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_CONTROLLER_HANDLER_REJECTS_BLACKLISTED =
+            TEST_FUNCTIONS.register("storage_controller_handler_rejects_blacklisted", () -> StorageGameTests::controllerHandlerRejectsBlacklistedItems);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_LOWERED_TYPE_LIMIT_KEEPS_ITEMS_VISIBLE =
+            TEST_FUNCTIONS.register("storage_lowered_type_limit_keeps_items_visible", () -> StorageGameTests::loweredTypeLimitKeepsItemsVisible);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_HUGE_TOTAL_LIMIT_DOES_NOT_OVERFLOW =
+            TEST_FUNCTIONS.register("storage_huge_total_limit_does_not_overflow", () -> StorageGameTests::hugeTotalLimitDoesNotOverflow);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_LOADING_RECOMPUTES_COUNTS_AND_SLOTS =
+            TEST_FUNCTIONS.register("storage_loading_recomputes_counts_and_slots", () -> StorageGameTests::loadingRecomputesCountsAndSlots);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_REQUESTS_EXTRACT_MATCHING_RESOURCES =
+            TEST_FUNCTIONS.register("storage_requests_extract_matching_resources", () -> StorageGameTests::requestsExtractMatchingStoredResources);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_LINKED_MACHINES_SAVED_NOT_SYNCED =
+            TEST_FUNCTIONS.register("storage_linked_machines_saved_not_synced", () -> StorageGameTests::linkedMachinesAreSavedButNotSynced);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_INGREDIENT_GRID_FOLLOWS_PLACEMENT =
+            TEST_FUNCTIONS.register("storage_ingredient_grid_follows_placement", () -> StorageGameTests::ingredientGridFollowsRecipePlacement);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_STACK_SYNC_REJECTS_TRUNCATED_DATA =
+            TEST_FUNCTIONS.register("storage_stack_sync_rejects_truncated_data", () -> StorageGameTests::stackSyncRejectsTruncatedData);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_SHIFT_CRAFT_FOREIGN_REMAINDER =
+            TEST_FUNCTIONS.register("storage_shift_craft_foreign_remainder", () -> StorageGameTests::shiftCraftingWithForeignRemainderConsumesIngredient);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_SHIFT_CRAFT_EMPTY_RESULT_UNLOCKS =
+            TEST_FUNCTIONS.register("storage_shift_craft_empty_result_unlocks", () -> StorageGameTests::shiftCraftingWithEmptyResultUnlocksGrid);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_UPDATES_ONLY_WHEN_CHANGED =
+            TEST_FUNCTIONS.register("storage_updates_only_when_changed", () -> StorageGameTests::storageUpdatesAreOnlySentWhenChanged);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_PROXY_SEARCH_CLOSEST_LINKED =
+            TEST_FUNCTIONS.register("storage_proxy_search_closest_linked", () -> StorageGameTests::proxySearchFindsClosestLinkedProxy);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_MANAGE_MACHINE_RERESOLVES_MACHINE =
+            TEST_FUNCTIONS.register("storage_manage_machine_reresolves_machine", () -> StorageGameTests::manageMachineJobReResolvesReplacedMachine);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_INSERT_STACKED_KEEPS_TRANSACTION =
+            TEST_FUNCTIONS.register("storage_insert_stacked_keeps_transaction", () -> StorageGameTests::insertItemStackedKeepsCallerTransactionOpen);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_PACKETS_IGNORE_INVALID_MENU =
+            TEST_FUNCTIONS.register("storage_packets_ignore_invalid_menu", () -> StoragePacketGameTests::packetsIgnoreInvalidStorageMenu);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_PACKETS_KEEP_MOUSE_HELD_ITEM =
+            TEST_FUNCTIONS.register("storage_packets_keep_mouse_held_item", () -> StoragePacketGameTests::packetsNeverDeleteMouseHeldItem);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_SET_RECIPE_BY_ID_OCCUPIED_SLOTS =
+            TEST_FUNCTIONS.register("storage_set_recipe_by_id_occupied_slots", () -> StoragePacketGameTests::setRecipeByIdSkipsOccupiedGridSlots);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_SET_RECIPE_OCCUPIED_SLOTS =
+            TEST_FUNCTIONS.register("storage_set_recipe_occupied_slots", () -> StoragePacketGameTests::setRecipeSkipsOccupiedGridSlots);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_SET_RECIPE_BY_TEMPLATE_SHAPED =
+            TEST_FUNCTIONS.register("storage_set_recipe_by_template_shaped", () -> StoragePacketGameTests::setRecipeByTemplateFillsShapedRecipe);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_REQUEST_ORDER_VALIDATED =
+            TEST_FUNCTIONS.register("storage_request_order_validated", () -> StoragePacketGameTests::requestOrderIsValidatedAgainstOpenMenu);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_SORT_ITEMS_OPEN_MENU =
+            TEST_FUNCTIONS.register("storage_sort_items_open_menu", () -> StoragePacketGameTests::sortItemsAppliesToOpenMenu);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_FIRST_STACK_REQUEST_NOT_LIMITED =
+            TEST_FUNCTIONS.register("storage_first_stack_request_not_limited", () -> StoragePacketGameTests::firstStackRequestIsNotRateLimited);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_REMOTE_OPENING_GUARDED =
+            TEST_FUNCTIONS.register("storage_remote_opening_guarded", () -> StoragePacketGameTests::storageRemoteOpeningIsGuarded);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_WORK_AREA_SIZE_INVALID_IGNORED =
+            TEST_FUNCTIONS.register("storage_work_area_size_invalid_ignored", () -> StoragePacketGameTests::workAreaSizePacketIgnoresInvalidSizes);
+
     // endregion Storage controller
 
     // region Satchel and wormhole tablet
@@ -211,6 +283,31 @@ public class GameTestRegistry {
         registerTest(event, CURIOS_UTIL_STORAGE_REMOTE_FIRST_SLOT, curiosEnvironment, structure, 40, 0);
 
         // region Storage controller
+        var storageEnvironment = event.registerEnvironment(Identifier.fromNamespaceAndPath(Occultism.MODID, "storage"));
+        registerTest(event, STORAGE_CONTROLLER_HANDLER_REJECTS_BLACKLISTED, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_LOWERED_TYPE_LIMIT_KEEPS_ITEMS_VISIBLE, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_HUGE_TOTAL_LIMIT_DOES_NOT_OVERFLOW, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_LOADING_RECOMPUTES_COUNTS_AND_SLOTS, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_REQUESTS_EXTRACT_MATCHING_RESOURCES, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_LINKED_MACHINES_SAVED_NOT_SYNCED, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_INGREDIENT_GRID_FOLLOWS_PLACEMENT, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_STACK_SYNC_REJECTS_TRUNCATED_DATA, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_SHIFT_CRAFT_FOREIGN_REMAINDER, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_SHIFT_CRAFT_EMPTY_RESULT_UNLOCKS, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_UPDATES_ONLY_WHEN_CHANGED, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_PROXY_SEARCH_CLOSEST_LINKED, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_MANAGE_MACHINE_RERESOLVES_MACHINE, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_INSERT_STACKED_KEEPS_TRANSACTION, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_PACKETS_IGNORE_INVALID_MENU, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_PACKETS_KEEP_MOUSE_HELD_ITEM, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_SET_RECIPE_BY_ID_OCCUPIED_SLOTS, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_SET_RECIPE_OCCUPIED_SLOTS, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_SET_RECIPE_BY_TEMPLATE_SHAPED, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_REQUEST_ORDER_VALIDATED, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_SORT_ITEMS_OPEN_MENU, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_FIRST_STACK_REQUEST_NOT_LIMITED, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_REMOTE_OPENING_GUARDED, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_WORK_AREA_SIZE_INVALID_IGNORED, storageEnvironment, structure, 40, 0);
 
         // endregion Storage controller
 
