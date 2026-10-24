@@ -287,7 +287,7 @@ public class FamiliarGameTests {
 
             logout(helper, second);
             helper.assertTrue(deer.getFamiliarOwner() == null, "Logged out owner is still returned");
-            helper.assertTrue(deer.hasFamiliarOwner(), "Familiar lost its owner when the owner logged out");
+            helper.assertTrue(deer.getOwnerId() != null, "Familiar lost its owner when the owner logged out");
         } finally {
             logout(helper, first);
             logout(helper, second);
