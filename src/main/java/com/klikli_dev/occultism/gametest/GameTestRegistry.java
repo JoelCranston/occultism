@@ -73,6 +73,9 @@ public class GameTestRegistry {
     public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_STACK_SYNC_REJECTS_TRUNCATED_DATA =
             TEST_FUNCTIONS.register("storage_stack_sync_rejects_truncated_data", () -> StorageGameTests::stackSyncRejectsTruncatedData);
 
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_STACK_SYNC_NETWORK_ROUND_TRIP =
+            TEST_FUNCTIONS.register("storage_stack_sync_network_round_trip", () -> StorageGameTests::stackSyncSurvivesNetworkRoundTrip);
+
     public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> STORAGE_SHIFT_CRAFT_FOREIGN_REMAINDER =
             TEST_FUNCTIONS.register("storage_shift_craft_foreign_remainder", () -> StorageGameTests::shiftCraftingWithForeignRemainderConsumesIngredient);
 
@@ -292,6 +295,7 @@ public class GameTestRegistry {
         registerTest(event, STORAGE_LINKED_MACHINES_SAVED_NOT_SYNCED, storageEnvironment, structure, 40, 0);
         registerTest(event, STORAGE_INGREDIENT_GRID_FOLLOWS_PLACEMENT, storageEnvironment, structure, 40, 0);
         registerTest(event, STORAGE_STACK_SYNC_REJECTS_TRUNCATED_DATA, storageEnvironment, structure, 40, 0);
+        registerTest(event, STORAGE_STACK_SYNC_NETWORK_ROUND_TRIP, storageEnvironment, structure, 40, 0);
         registerTest(event, STORAGE_SHIFT_CRAFT_FOREIGN_REMAINDER, storageEnvironment, structure, 40, 0);
         registerTest(event, STORAGE_SHIFT_CRAFT_EMPTY_RESULT_UNLOCKS, storageEnvironment, structure, 40, 0);
         registerTest(event, STORAGE_UPDATES_ONLY_WHEN_CHANGED, storageEnvironment, structure, 40, 0);

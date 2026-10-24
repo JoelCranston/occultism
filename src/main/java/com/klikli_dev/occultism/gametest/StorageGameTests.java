@@ -290,10 +290,8 @@ public class StorageGameTests {
     /**
      * Stack sync data must survive being encoded to and decoded from a network buffer.
      * <p>
-     * NOT REGISTERED: exposes a bug introduced by "fix: avoid oversized buffers and endless loops in storage stack
-     * sync". decode() fills the payload with buf.readBytes(payload, 0, size), which does not advance the payload
-     * writer index, and uncompress() now only reads payload.readableBytes() (0), so every decoded message yields an
-     * empty stack list (dedicated server clients see an empty storage).
+     * uncompress() only reads payload.readableBytes(), so decode() must advance the payload writer index, otherwise
+     * every decoded message yields an empty stack list (dedicated server clients see an empty storage).
      */
     public static void stackSyncSurvivesNetworkRoundTrip(GameTestHelper helper) {
         var access = helper.getLevel().registryAccess();
