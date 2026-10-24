@@ -108,7 +108,7 @@ public class MessageUpdateStacks implements IMessage {
         //read compressed size, then compressed data.
         int compressedSize = buf.readVarInt();
         this.payload = Unpooled.buffer(compressedSize);
-        buf.readBytes(this.payload, 0, compressedSize);
+        buf.readBytes(this.payload, compressedSize);
     }
 
     public void uncompress(RegistryAccess registryAccess) {
