@@ -168,6 +168,10 @@ public interface FamiliarCurio {
             familiar.getFamiliarEntity().stopRiding();
             familiar.getFamiliarEntity().ejectPassengers();
             familiar.getFamiliarEntity().remove(Entity.RemovalReason.DISCARDED);
+            //addFamiliar cached the now discarded instance, which can neither be released nor saved, so load a fresh copy next time
+            var data = this.stack.get(OccultismDataComponents.FAMILIAR_DATA);
+            if (data != null)
+                getCache(level).invalidate(data);
             return true;
         }
 
