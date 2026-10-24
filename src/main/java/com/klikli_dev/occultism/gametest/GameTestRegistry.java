@@ -95,6 +95,9 @@ public class GameTestRegistry {
     public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RANDOM_TELEPORT_AT_WORLD_BORDER_DOES_NOT_THROW =
             TEST_FUNCTIONS.register("random_teleport_at_world_border_does_not_throw", () -> SatchelTabletGameTests::randomTeleportAtWorldBorderDoesNotThrow);
 
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RANDOM_TELEPORT_FINDS_TARGET_IN_UNLOADED_AREA =
+            TEST_FUNCTIONS.register("random_teleport_finds_target_in_unloaded_area", () -> SatchelTabletGameTests::randomTeleportFindsTargetInUnloadedArea);
+
     // endregion Satchel and wormhole tablet
 
     // region Rituals
@@ -227,6 +230,7 @@ public class GameTestRegistry {
         registerTest(event, TELEPORT_SETS_BACK_COMPASS, satchelTabletEnvironment, structure, 40, 0);
         registerTest(event, TELEPORT_WITH_BACK_COMPASS_KEEPS_ITS_TARGET, satchelTabletEnvironment, structure, 40, 0);
         registerTest(event, RANDOM_TELEPORT_AT_WORLD_BORDER_DOES_NOT_THROW, satchelTabletEnvironment, structure, 40, 0);
+        registerTest(event, RANDOM_TELEPORT_FINDS_TARGET_IN_UNLOADED_AREA, satchelTabletEnvironment, structure, 40, 0);
         // endregion Satchel and wormhole tablet
 
         // region Rituals

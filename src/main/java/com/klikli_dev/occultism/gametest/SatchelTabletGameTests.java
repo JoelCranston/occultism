@@ -380,8 +380,8 @@ public class SatchelTabletGameTests {
 
     /**
      * Random teleport should find a target around an entity whose surroundings are not loaded yet.
-     * NOT REGISTERED: currently fails. findSafeRTP uses Level#getHeight, which returns getMinY() for unloaded chunks
-     * instead of loading them, so every candidate outside already loaded chunks is rejected and RTP returns null.
+     * Level#getHeight returns getMinY() for unloaded chunks, so findSafeRTP must load the chunk before reading the
+     * heightmap, otherwise every candidate outside already loaded chunks is rejected and RTP returns null.
      */
     public static void randomTeleportFindsTargetInUnloadedArea(GameTestHelper helper) {
         var player = helper.makeMockPlayer(GameType.SURVIVAL);
