@@ -56,7 +56,44 @@ public class GameTestRegistry {
     // endregion Satchel and wormhole tablet
 
     // region Rituals
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_FULL_RUN_COMPLETES =
+            TEST_FUNCTIONS.register("ritual_full_run_completes", () -> RitualGameTests::fullRitualCompletes);
 
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_ACTIVATION_ITEM_NOT_CONSUMED_WHEN_INSERT_FAILS =
+            TEST_FUNCTIONS.register("ritual_activation_item_not_consumed_when_insert_fails", () -> RitualGameTests::activationItemNotConsumedWhenInsertFails);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_HANDLER_INSERT_STARTS_ON_COMMIT =
+            TEST_FUNCTIONS.register("ritual_handler_insert_starts_on_commit", () -> RitualGameTests::handlerInsertStartsRitualOnlyOnCommit);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_BROKEN_PENTACLE_INTERRUPTS =
+            TEST_FUNCTIONS.register("ritual_broken_pentacle_interrupts", () -> RitualGameTests::brokenPentacleInterruptsRitual);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_ONE_FLAME_OF_AUTOMATION =
+            TEST_FUNCTIONS.register("ritual_one_flame_of_automation", () -> RitualGameTests::oneFlameOfAutomationPerRitual);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_ADVANCEMENT_RITUAL_ID =
+            TEST_FUNCTIONS.register("ritual_advancement_ritual_id", () -> RitualGameTests::advancementRitualIdMatchesRecipe);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_INSTANCE_CACHED =
+            TEST_FUNCTIONS.register("ritual_instance_cached", () -> RitualGameTests::ritualInstanceIsCachedPerRecipe);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_LOAD_NETWORK_CLEARS_STALE_STATE =
+            TEST_FUNCTIONS.register("ritual_load_network_clears_stale_state", () -> RitualGameTests::loadNetworkClearsStaleRitualState);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_LOAD_MISSING_RECIPE =
+            TEST_FUNCTIONS.register("ritual_load_missing_recipe", () -> RitualGameTests::loadWithMissingRitualRecipe);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_LISTENERS_UNREGISTERED_ON_CHUNK_UNLOAD =
+            TEST_FUNCTIONS.register("ritual_listeners_unregistered_on_chunk_unload", () -> RitualGameTests::listenersUnregisteredOnChunkUnload);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_EMPTY_ENTITY_TAG_PREVIEW =
+            TEST_FUNCTIONS.register("ritual_empty_entity_tag_preview", () -> RitualGameTests::emptyEntityTagPreviewReturnsNull);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_PREVIEWED_PENTACLE_VALIDATED =
+            TEST_FUNCTIONS.register("ritual_previewed_pentacle_validated", () -> RitualGameTests::previewedPentacleIsValidated);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> RITUAL_BOWL_NETWORK_SYNC_KEEPS_INVENTORY =
+            TEST_FUNCTIONS.register("ritual_bowl_network_sync_keeps_inventory", () -> RitualGameTests::bowlNetworkSyncKeepsInventory);
     // endregion Rituals
 
     // region Dimensional mineshaft and battlefield
@@ -137,7 +174,21 @@ public class GameTestRegistry {
         // endregion Satchel and wormhole tablet
 
         // region Rituals
-
+        var ritualEnvironment = event.registerEnvironment(Identifier.fromNamespaceAndPath(Occultism.MODID, "rituals"));
+        // the repair chalks ritual takes 10 seconds (200 ticks)
+        registerTest(event, RITUAL_FULL_RUN_COMPLETES, ritualEnvironment, largeStructure, 600, 0);
+        registerTest(event, RITUAL_ACTIVATION_ITEM_NOT_CONSUMED_WHEN_INSERT_FAILS, ritualEnvironment, largeStructure, 40, 0);
+        registerTest(event, RITUAL_HANDLER_INSERT_STARTS_ON_COMMIT, ritualEnvironment, largeStructure, 40, 0);
+        registerTest(event, RITUAL_BROKEN_PENTACLE_INTERRUPTS, ritualEnvironment, largeStructure, 200, 0);
+        registerTest(event, RITUAL_ONE_FLAME_OF_AUTOMATION, ritualEnvironment, structure, 40, 0);
+        registerTest(event, RITUAL_ADVANCEMENT_RITUAL_ID, ritualEnvironment, structure, 40, 0);
+        registerTest(event, RITUAL_INSTANCE_CACHED, ritualEnvironment, structure, 40, 0);
+        registerTest(event, RITUAL_LOAD_NETWORK_CLEARS_STALE_STATE, ritualEnvironment, structure, 40, 0);
+        registerTest(event, RITUAL_LOAD_MISSING_RECIPE, ritualEnvironment, structure, 40, 0);
+        registerTest(event, RITUAL_LISTENERS_UNREGISTERED_ON_CHUNK_UNLOAD, ritualEnvironment, structure, 40, 0);
+        registerTest(event, RITUAL_EMPTY_ENTITY_TAG_PREVIEW, ritualEnvironment, structure, 40, 0);
+        registerTest(event, RITUAL_PREVIEWED_PENTACLE_VALIDATED, ritualEnvironment, structure, 40, 0);
+        registerTest(event, RITUAL_BOWL_NETWORK_SYNC_KEEPS_INVENTORY, ritualEnvironment, structure, 40, 0);
         // endregion Rituals
 
         // region Dimensional mineshaft and battlefield
