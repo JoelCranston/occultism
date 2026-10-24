@@ -4,6 +4,7 @@ import com.klikli_dev.occultism.Occultism;
 import com.klikli_dev.occultism.registry.OccultismDataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -172,8 +173,11 @@ public class TeleportUtil {
         //Random direction
         int x = entity.getBlockX() + random.nextInt(-range, range);
         int z = entity.getBlockZ() + random.nextInt(-range, range);
-        //Find floor using the heightmap instead of scanning down from the build limit
-        BlockPos blockpos = new BlockPos(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z), z);
+        //Find floor using the heightmap instead of scanning down from the build limit.
+        //Level#getHeight returns the min y for unloaded chunks, so load the chunk first, as the block state scan did.
+        int y = level.getChunk(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(z))
+                .getHeight(Heightmap.Types.MOTION_BLOCKING, x & 15, z & 15) + 1;
+        BlockPos blockpos = new BlockPos(x, y, z);
         //Pass nether (or other dimension) roof
         if (blockpos.getY() > 10 && level.getBlockState(blockpos.below()).is(Blocks.BEDROCK)) {
             blockpos = blockpos.below(5);
