@@ -267,6 +267,90 @@ public class GameTestRegistry {
 
     // region Familiars
 
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_OFFLINE_OWNED_FAMILIAR_CANNOT_BE_CLAIMED =
+            TEST_FUNCTIONS.register("familiar_offline_owned_familiar_cannot_be_claimed", () -> FamiliarGameTests::offlineOwnedFamiliarCannotBeClaimed);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_OFFLINE_OWNED_BIRD_CANNOT_BE_CLAIMED =
+            TEST_FUNCTIONS.register("familiar_offline_owned_bird_cannot_be_claimed", () -> FamiliarGameTests::offlineOwnedBirdCannotBeClaimed);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_OFFLINE_OWNED_FAMILIAR_CANNOT_BE_CAPTURED =
+            TEST_FUNCTIONS.register("familiar_offline_owned_familiar_cannot_be_captured", () -> FamiliarGameTests::offlineOwnedFamiliarCannotBeCaptured);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_KEEPS_SITTING_WHILE_OWNER_OFFLINE =
+            TEST_FUNCTIONS.register("familiar_keeps_sitting_while_owner_offline", () -> FamiliarGameTests::familiarKeepsSittingWhileOwnerOffline);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_OWNER_CACHE_FOLLOWS_OWNER_CHANGES =
+            TEST_FUNCTIONS.register("familiar_owner_cache_follows_owner_changes", () -> FamiliarGameTests::familiarOwnerCacheFollowsOwnerChanges);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_GUARDIAN_VARIANTS_SURVIVE_SAVE_LOAD =
+            TEST_FUNCTIONS.register("familiar_guardian_variants_survive_save_load", () -> FamiliarGameTests::guardianVariantsSurviveSaveLoad);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_DEER_RED_NOSE_SURVIVES_SAVE_LOAD =
+            TEST_FUNCTIONS.register("familiar_deer_red_nose_survives_save_load", () -> FamiliarGameTests::deerRedNoseSurvivesSaveLoad);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_GUARDIAN_WITH_OFFLINE_OWNER_DOES_NOT_CRASH =
+            TEST_FUNCTIONS.register("familiar_guardian_with_offline_owner_does_not_crash", () -> FamiliarGameTests::guardianWithOfflineOwnerDoesNotCrash);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_SETTINGS_KEEP_DEFAULTS_WHEN_DESERIALIZING_NBT =
+            TEST_FUNCTIONS.register("familiar_settings_keep_defaults_when_deserializing_nbt", () -> FamiliarGameTests::familiarSettingsKeepDefaultsWhenDeserializingNbt);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_SETTINGS_KEEP_DEFAULTS_WHEN_DESERIALIZING_VALUE_INPUT =
+            TEST_FUNCTIONS.register("familiar_settings_keep_defaults_when_deserializing_value_input", () -> FamiliarGameTests::familiarSettingsKeepDefaultsWhenDeserializingValueInput);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_SETTINGS_MATCH_EFFECTS_BY_REGISTRY_KEY =
+            TEST_FUNCTIONS.register("familiar_settings_match_effects_by_registry_key", () -> FamiliarGameTests::familiarSettingsMatchEffectsByRegistryKey);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_BLACKSMITH_REPAIR_DELAY_REJECTS_ZERO =
+            TEST_FUNCTIONS.register("familiar_blacksmith_repair_delay_rejects_zero", () -> FamiliarGameTests::blacksmithRepairDelayRejectsZero);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_EQUIPMENT_NOT_DUPED_ON_DEATH =
+            TEST_FUNCTIONS.register("familiar_equipment_not_duped_on_death", () -> FamiliarGameTests::familiarEquipmentNotDupedOnDeath);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_BIRD_EQUIPMENT_NOT_DUPED_ON_DEATH =
+            TEST_FUNCTIONS.register("familiar_bird_equipment_not_duped_on_death", () -> FamiliarGameTests::birdEquipmentNotDupedOnDeath);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_GREEDY_FAMILIAR_ONLY_ACCEPTS_BLOCKS_FROM_OWNER =
+            TEST_FUNCTIONS.register("familiar_greedy_familiar_only_accepts_blocks_from_owner", () -> FamiliarGameTests::greedyFamiliarOnlyAcceptsBlocksFromOwner);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_BLACKSMITH_COUNTS_LAST_IRON_CORRECTLY =
+            TEST_FUNCTIONS.register("familiar_blacksmith_counts_last_iron_correctly", () -> FamiliarGameTests::blacksmithCountsLastIronCorrectly);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_SOUL_GEM_PRESERVES_MOB_EQUIPMENT =
+            TEST_FUNCTIONS.register("familiar_soul_gem_preserves_mob_equipment", () -> FamiliarGameTests::soulGemPreservesMobEquipment);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_RING_PRESERVES_EQUIPMENT =
+            TEST_FUNCTIONS.register("familiar_ring_preserves_equipment", () -> FamiliarGameTests::familiarRingPreservesEquipment);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_CURIO_WRITES_BACK_GUARDIAN_LIVES =
+            TEST_FUNCTIONS.register("familiar_curio_writes_back_guardian_lives", () -> FamiliarGameTests::familiarCurioWritesBackGuardianLives);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_APPLIES_EFFECTS_TO_OWNER =
+            TEST_FUNCTIONS.register("familiar_applies_effects_to_owner", () -> FamiliarGameTests::familiarAppliesEffectsToOwner);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_HEADLESS_WEAKENS_PLAYERS_WITH_PVP =
+            TEST_FUNCTIONS.register("familiar_headless_weakens_players_with_pvp", () -> FamiliarGameTests::headlessWeakensPlayersWithPvp);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_HEADLESS_DOES_NOT_WEAKEN_PLAYERS_WITHOUT_PVP =
+            TEST_FUNCTIONS.register("familiar_headless_does_not_weaken_players_without_pvp", () -> FamiliarGameTests::headlessDoesNotWeakenPlayersWithoutPvp);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_HEADLESS_WITH_OFFLINE_OWNER_DOES_NOT_WEAKEN_PLAYERS =
+            TEST_FUNCTIONS.register("familiar_headless_with_offline_owner_does_not_weaken_players", () -> FamiliarGameTests::headlessWithOfflineOwnerDoesNotWeakenPlayers);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_SHUB_NIGGURATH_DOES_NOT_SPAWN_WITHOUT_ENEMIES =
+            TEST_FUNCTIONS.register("familiar_shub_niggurath_does_not_spawn_without_enemies", () -> FamiliarGameTests::shubNiggurathDoesNotSpawnWithoutEnemies);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_SHUB_NIGGURATH_SPAWNS_WITH_ENEMIES =
+            TEST_FUNCTIONS.register("familiar_shub_niggurath_spawns_with_enemies", () -> FamiliarGameTests::shubNiggurathSpawnsWithEnemies);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_SHUB_NIGGURATH_SPAWNS_ARE_CAPPED =
+            TEST_FUNCTIONS.register("familiar_shub_niggurath_spawns_are_capped", () -> FamiliarGameTests::shubNiggurathSpawnsAreCapped);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_BEAVER_CHOPS_FIFTEEN_LOG_TREE =
+            TEST_FUNCTIONS.register("familiar_beaver_chops_fifteen_log_tree", () -> FamiliarGameTests::beaverChopsFifteenLogTree);
+
+    public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> FAMILIAR_IESNIUM_GOLEM_IS_RESCUED_FROM_VOID =
+            TEST_FUNCTIONS.register("familiar_iesnium_golem_is_rescued_from_void", () -> FamiliarGameTests::iesniumGolemIsRescuedFromVoid);
+
     // endregion Familiars
 
     public static void onRegisterGameTests(RegisterGameTestsEvent event) {
@@ -374,7 +458,37 @@ public class GameTestRegistry {
         // endregion Dimensional mineshaft and battlefield
 
         // region Familiars
-
+        var familiarsEnvironment = event.registerEnvironment(Identifier.fromNamespaceAndPath(Occultism.MODID, "familiars"));
+        var familiarsNoPvpEnvironment = event.registerEnvironment(Identifier.fromNamespaceAndPath(Occultism.MODID, "familiars_no_pvp"),
+                FamiliarGameTests.pvpDisabled());
+        registerTest(event, FAMILIAR_OFFLINE_OWNED_FAMILIAR_CANNOT_BE_CLAIMED, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_OFFLINE_OWNED_BIRD_CANNOT_BE_CLAIMED, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_OFFLINE_OWNED_FAMILIAR_CANNOT_BE_CAPTURED, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_KEEPS_SITTING_WHILE_OWNER_OFFLINE, familiarsEnvironment, structure, 100, 0);
+        registerTest(event, FAMILIAR_OWNER_CACHE_FOLLOWS_OWNER_CHANGES, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_GUARDIAN_VARIANTS_SURVIVE_SAVE_LOAD, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_DEER_RED_NOSE_SURVIVES_SAVE_LOAD, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_GUARDIAN_WITH_OFFLINE_OWNER_DOES_NOT_CRASH, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_SETTINGS_KEEP_DEFAULTS_WHEN_DESERIALIZING_NBT, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_SETTINGS_KEEP_DEFAULTS_WHEN_DESERIALIZING_VALUE_INPUT, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_SETTINGS_MATCH_EFFECTS_BY_REGISTRY_KEY, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_BLACKSMITH_REPAIR_DELAY_REJECTS_ZERO, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_EQUIPMENT_NOT_DUPED_ON_DEATH, familiarsEnvironment, structure, 40, 0);
+        registerTest(event, FAMILIAR_BIRD_EQUIPMENT_NOT_DUPED_ON_DEATH, familiarsEnvironment, structure, 40, 0);
+        registerTest(event, FAMILIAR_GREEDY_FAMILIAR_ONLY_ACCEPTS_BLOCKS_FROM_OWNER, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_BLACKSMITH_COUNTS_LAST_IRON_CORRECTLY, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_SOUL_GEM_PRESERVES_MOB_EQUIPMENT, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_RING_PRESERVES_EQUIPMENT, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_CURIO_WRITES_BACK_GUARDIAN_LIVES, familiarsEnvironment, structure, 20, 0);
+        registerTest(event, FAMILIAR_APPLIES_EFFECTS_TO_OWNER, familiarsEnvironment, structure, 100, 0);
+        registerTest(event, FAMILIAR_HEADLESS_WEAKENS_PLAYERS_WITH_PVP, familiarsEnvironment, structure, 100, 0);
+        registerTest(event, FAMILIAR_HEADLESS_DOES_NOT_WEAKEN_PLAYERS_WITHOUT_PVP, familiarsNoPvpEnvironment, structure, 100, 0);
+        registerTest(event, FAMILIAR_HEADLESS_WITH_OFFLINE_OWNER_DOES_NOT_WEAKEN_PLAYERS, familiarsEnvironment, structure, 100, 0);
+        registerTest(event, FAMILIAR_SHUB_NIGGURATH_DOES_NOT_SPAWN_WITHOUT_ENEMIES, familiarsEnvironment, largeStructure, 260, 0);
+        registerTest(event, FAMILIAR_SHUB_NIGGURATH_SPAWNS_WITH_ENEMIES, familiarsEnvironment, largeStructure, 300, 0);
+        registerTest(event, FAMILIAR_SHUB_NIGGURATH_SPAWNS_ARE_CAPPED, familiarsEnvironment, largeStructure, 280, 0);
+        registerTest(event, FAMILIAR_BEAVER_CHOPS_FIFTEEN_LOG_TREE, familiarsEnvironment, largeStructure, 300, 0);
+        registerTest(event, FAMILIAR_IESNIUM_GOLEM_IS_RESCUED_FROM_VOID, familiarsEnvironment, structure, 20, 0);
         // endregion Familiars
     }
 
