@@ -47,10 +47,32 @@ public class GameTestRegistry {
     public static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> CURIOS_UTIL_STORAGE_REMOTE_FIRST_SLOT =
             TEST_FUNCTIONS.register("curios_util_storage_remote_first_slot", () -> CuriosUtilGameTests::storageRemoteInFirstInventorySlotIsFound);
 
+    // region Storage controller
+
+    // endregion Storage controller
+
+    // region Satchel and wormhole tablet
+
+    // endregion Satchel and wormhole tablet
+
+    // region Rituals
+
+    // endregion Rituals
+
+    // region Dimensional mineshaft and battlefield
+
+    // endregion Dimensional mineshaft and battlefield
+
+    // region Familiars
+
+    // endregion Familiars
+
     public static void onRegisterGameTests(RegisterGameTestsEvent event) {
         var environment = event.registerEnvironment(Identifier.fromNamespaceAndPath(Occultism.MODID, "map_item_resource_handler"));
         var curiosEnvironment = event.registerEnvironment(Identifier.fromNamespaceAndPath(Occultism.MODID, "curios_util"));
         var structure = Identifier.fromNamespaceAndPath(Occultism.MODID, "map_item_resource_handler_test");
+        // Empty 17x8x17 area for tests that need to place multiblocks such as ritual pentacles.
+        var largeStructure = Identifier.fromNamespaceAndPath(Occultism.MODID, "empty_17x8x17");
 
         registerTest(event, MAP_ITEM_RESOURCE_HANDLER_ABORTED_PROBES, environment, structure, 40, 0);
         registerTest(event, MAP_ITEM_RESOURCE_HANDLER_COMMITTED_EXTRACTION, environment, structure, 40, 0);
@@ -60,6 +82,26 @@ public class GameTestRegistry {
         registerTest(event, MAP_ITEM_RESOURCE_HANDLER_UNDO_JOURNAL_DRAINS, environment, structure, 40, 0);
         registerTest(event, MAP_ITEM_RESOURCE_HANDLER_RECURSIVE_COMMIT_NOTIFICATION, environment, structure, 40, 0);
         registerTest(event, CURIOS_UTIL_STORAGE_REMOTE_FIRST_SLOT, curiosEnvironment, structure, 40, 0);
+
+        // region Storage controller
+
+        // endregion Storage controller
+
+        // region Satchel and wormhole tablet
+
+        // endregion Satchel and wormhole tablet
+
+        // region Rituals
+
+        // endregion Rituals
+
+        // region Dimensional mineshaft and battlefield
+
+        // endregion Dimensional mineshaft and battlefield
+
+        // region Familiars
+
+        // endregion Familiars
     }
 
     private static void registerTest(
