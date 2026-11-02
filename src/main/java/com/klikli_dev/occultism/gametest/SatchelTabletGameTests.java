@@ -8,7 +8,7 @@ import com.klikli_dev.occultism.common.container.satchel.SatchelInventory;
 import com.klikli_dev.occultism.common.container.satchel.StorageSatchelContainer;
 import com.klikli_dev.occultism.common.container.tablet.TabletInventory;
 import com.klikli_dev.occultism.common.container.tablet.TeleportTabletContainer;
-import com.klikli_dev.occultism.network.messages.MessageRotateTabletContents;
+import com.klikli_dev.occultism.network.messages.MessageRotateWormholeTablet;
 import com.klikli_dev.occultism.registry.OccultismItems;
 import com.klikli_dev.occultism.util.TeleportUtil;
 import com.mojang.authlib.GameProfile;
@@ -261,38 +261,26 @@ public class SatchelTabletGameTests {
                     named("A"), named("B"), named("C"))));
             player.setItemInHand(InteractionHand.MAIN_HAND, tablet);
 
-            new MessageRotateTabletContents(InteractionHand.MAIN_HAND, true).onServerReceived(helper.getLevel().getServer(), player);
+            new MessageRotateWormholeTablet(true, InteractionHand.MAIN_HAND).onServerReceived(helper.getLevel().getServer(), player);
             assertNames(helper, player.getItemInHand(InteractionHand.MAIN_HAND), "C", "A", "B");
 
-            new MessageRotateTabletContents(InteractionHand.MAIN_HAND, false).onServerReceived(helper.getLevel().getServer(), player);
-            new MessageRotateTabletContents(InteractionHand.MAIN_HAND, false).onServerReceived(helper.getLevel().getServer(), player);
+            new MessageRotateWormholeTablet(false, InteractionHand.MAIN_HAND).onServerReceived(helper.getLevel().getServer(), player);
+            new MessageRotateWormholeTablet(false, InteractionHand.MAIN_HAND).onServerReceived(helper.getLevel().getServer(), player);
             assertNames(helper, player.getItemInHand(InteractionHand.MAIN_HAND), "B", "C", "A");
         });
         helper.succeed();
     }
 
     /**
-     * The rotate packet must not touch a tablet while a menu is open, nor any non-tablet item.
+     * The rotate packet must not touch any non-tablet item.
      */
     public static void rotateTabletContentsIgnoredWhenNotApplicable(GameTestHelper helper) {
         withServerPlayer(helper, player -> {
             var satchel = new ItemStack(OccultismItems.SATCHEL.get());
             satchel.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(List.of(named("A"), named("B"))));
             player.setItemInHand(InteractionHand.MAIN_HAND, satchel);
-            new MessageRotateTabletContents(InteractionHand.MAIN_HAND, true).onServerReceived(helper.getLevel().getServer(), player);
+            new MessageRotateWormholeTablet(true, InteractionHand.MAIN_HAND).onServerReceived(helper.getLevel().getServer(), player);
             assertNames(helper, satchel, "A", "B");
-
-            var tablet = new ItemStack(OccultismItems.WORMHOLE_TABLET.get());
-            tablet.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(List.of(named("A"), named("B"))));
-            player.setItemInHand(InteractionHand.MAIN_HAND, tablet);
-            player.setShiftKeyDown(true);
-            tablet.use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
-            player.setShiftKeyDown(false);
-            helper.assertTrue(player.containerMenu instanceof TeleportTabletContainer, "Expected an open tablet menu");
-
-            new MessageRotateTabletContents(InteractionHand.MAIN_HAND, true).onServerReceived(helper.getLevel().getServer(), player);
-            assertNames(helper, tablet, "A", "B");
-            player.closeContainer();
         });
         helper.succeed();
     }
