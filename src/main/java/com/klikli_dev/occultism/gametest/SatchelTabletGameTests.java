@@ -207,7 +207,7 @@ public class SatchelTabletGameTests {
     }
 
     /**
-     * Satchels opened from the offhand are tracked as Inventory.SLOT_OFFHAND and validated against the offhand stack.
+     * Satchels opened from the offhand are tracked as slot -1 and validated against the offhand stack.
      */
     public static void satchelOpenedFromOffhandValidatesOffhand(GameTestHelper helper) {
         withServerPlayer(helper, player -> {
