@@ -92,11 +92,12 @@ public class TeleportTabletItem extends Item {
 
                 //save the current position in a compass named BACK before teleporting away.
                 //this is done server side on the actual stack, no client input is involved.
-                boolean updated = false;
+                //teleporting with the BACK compass itself keeps its target, so it is not overwritten.
+                boolean updated = isBackCompass(compass);
                 NonNullList<ItemStack> items = NonNullList.create();
                 for (int i = 0 ; i < contents.getSlots() ; i++) {
                     ItemStack back = contents.getStackInSlot(i);
-                    if (!updated && back.getOrDefault(DataComponents.CUSTOM_NAME, Component.empty()).getString().equals("BACK")) {
+                    if (!updated && isBackCompass(back)) {
                         LodestoneTracker target = new LodestoneTracker(Optional.of(GlobalPos.of(level.dimension(), player.blockPosition())), true);
                         back.set(DataComponents.LODESTONE_TRACKER, target);
                         updated = true;
@@ -116,6 +117,10 @@ public class TeleportTabletItem extends Item {
         }
 
         return InteractionResult.SUCCESS;
+    }
+
+    private static boolean isBackCompass(ItemStack compass) {
+        return compass.getOrDefault(DataComponents.CUSTOM_NAME, Component.empty()).getString().equals("BACK");
     }
 
     @Override
