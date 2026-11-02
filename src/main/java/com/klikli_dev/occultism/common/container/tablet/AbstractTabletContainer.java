@@ -28,6 +28,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -61,10 +62,48 @@ public abstract class AbstractTabletContainer extends AbstractContainerMenu {
 
     @Override
     public void broadcastChanges() {
-        if (this.tabletInventory instanceof TabletInventory) {
-            ((TabletInventory) this.tabletInventory).writeItemStack();
-        }
+        this.writeTablet();
         super.broadcastChanges();
+    }
+
+    @Override
+    public void clicked(int slotId, int button, ContainerInput input, Player player) {
+        super.clicked(slotId, button, input, player);
+        // Write right away instead of waiting for the next broadcastChanges(): if the tablet stack is
+        // copied or moved later in the same tick, the copy must already contain the current contents.
+        this.writeTablet();
+    }
+
+    @Override
+    public void removed(Player player) {
+        this.writeTablet();
+        super.removed(player);
+    }
+
+    /**
+     * Writes the menu contents into the tablet stack, but only while that stack is still the one
+     * this menu was opened with. Writing into a stack that was moved/replaced would leave the moved
+     * copy with the old contents while the items taken out of the menu are kept (duplication).
+     */
+    protected void writeTablet() {
+        if (this.tabletInventory instanceof TabletInventory inventory && this.isSameTablet(this.playerInventory.player)) {
+            inventory.writeItemStack();
+        }
+    }
+
+    /**
+     * Server side the menu works on the actual tablet stack (see {@link TabletInventory#getItemStack()}),
+     * so the slot it was opened from must still hold that exact object, not just an item of the same type.
+     * Client side (plain container) this check does not apply.
+     */
+    protected boolean isSameTablet(Player player) {
+        if (!(this.tabletInventory instanceof TabletInventory inventory))
+            return true;
+        ItemStack tablet = inventory.getItemStack();
+        if (this.selectedSlot == -1)
+            return player.getOffhandItem() == tablet || CuriosUtil.getBackpack(player) == tablet;
+        return this.selectedSlot >= 0 && this.selectedSlot < player.getInventory().getContainerSize()
+                && player.getInventory().getItem(this.selectedSlot) == tablet;
     }
 
     @Override
@@ -105,6 +144,8 @@ public abstract class AbstractTabletContainer extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
+        if (!this.isSameTablet(player))
+            return false;
         if (this.selectedSlot == -1) {
             return CuriosUtil.getBackpack(player).getItem() == this.tabletStack.getItem();
         }
